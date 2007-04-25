@@ -1,5 +1,5 @@
 %define _rescuever 1.8.3
-%define _guiver 2.0.2
+%define _guiver 2.0.3
 
 %define _cur_db_ver 10
 
@@ -40,16 +40,16 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.0.2
-Release:	%mkrel 2
+Version:	2.0.3
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
 URL:		http://www.bacula.org/
-Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.bz2
+Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 Source1:	bacula-icons.tar.bz2
 #Source3:	http://prdownloads.sourceforge.net/%{name}/%{name}-rescue-%{_rescuever}.tar.bz2
-Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.bz2
+Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.gz
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
 Patch0:		bacula-2.0.0-config.diff
@@ -258,10 +258,6 @@ BuildRequires: libgnomeui2-devel
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
-%if %mdkversion >= 200700
-Requires(post): desktop-file-utils
-Requires(postun): desktop-file-utils
-%endif
 
 %description	console-gnome
 %{blurb}
@@ -282,10 +278,6 @@ BuildRequires:	wxGTK2.4-devel
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
-%if %mdkversion >= 200700
-Requires(post): desktop-file-utils
-Requires(postun): desktop-file-utils
-%endif
 
 %description	console-wx
 %{blurb}
@@ -388,10 +380,6 @@ BuildRequires:	gtk2-devel
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
-%if %mdkversion >= 200700
-Requires(post): desktop-file-utils
-Requires(postun): desktop-file-utils
-%endif
 
 %description	tray-monitor
 %{blurb}
@@ -934,49 +922,32 @@ fi
 %post console-gnome
 %post_fix_config gnome-console
 %update_menus
-%if %mdkversion >= 200700
-%update_desktop_database
-%endif
 		
 %postun console-gnome
 %clean_menus
-%if %mdkversion >= 200700
-%clean_desktop_database
-%endif
 %endif
 
 %if %{WXWINDOWS}
 %post console-wx
 %post_fix_config wx-console
 %update_menus
-%if %mdkversion >= 200700
-%update_desktop_database
-%endif
 		
 %postun console-wx
 %clean_menus
-%if %mdkversion >= 200700
-%clean_desktop_database
-%endif
 %endif
 
 %if %{TRAY}
 %post tray-monitor
 %post_fix_config tray-monitor
 %update_menus
-%if %mdkversion >= 200700
-%update_desktop_database
-%endif
 		
 %postun tray-monitor
 %clean_menus
-%if %mdkversion >= 200700
-%clean_desktop_database
-%endif
 %endif
 
 %clean
 rm -rf %{buildroot}
+
 %files common
 %defattr(644, root, root, 755)
 %doc LICENSE
@@ -1189,5 +1160,3 @@ rm -rf %{buildroot}
 %{_datadir}/applications/mandriva-%{name}-tray-monitor.desktop
 %{_mandir}/man1/bacula-tray-monitor.1*
 %endif
-
-
