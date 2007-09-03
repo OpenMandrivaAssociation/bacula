@@ -1,5 +1,5 @@
-%define _rescuever 1.8.3
-%define _guiver 2.0.3
+%define _rescuever 2.2.1
+%define _guiver 2.2.1
 
 %define _cur_db_ver 10
 
@@ -8,6 +8,7 @@
 %define SQLITE3 1
 %define GNOME 1
 %define WXWINDOWS 1
+%define BAT 0
 %define TCPW 1
 %define GUI 1
 %define RESCUE 0
@@ -23,6 +24,8 @@
 %{?_without_gnome: %{expand: %%global GNOME 0}}
 %{?_with_wx: %{expand: %%global WXWINDOWS 1}}
 %{?_without_wx: %{expand: %%global WXWINDOWS 0}}
+%{?_with_bat: %{expand: %%global BAT 1}}
+%{?_without_bat: %{expand: %%global BAT 0}}
 %{?_with_wrap: %{expand: %%global TCPW 1}}
 %{?_without_wrap: %{expand: %%global TCPW 0}}
 %{?_with_gui: %{expand: %%global GUI 1}}
@@ -40,29 +43,30 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.0.3
-Release:	%mkrel 1
+Version:	2.2.1
+Release:	%mkrel 0.0.0
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
 URL:		http://www.bacula.org/
 Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
-Source1:	bacula-icons.tar.bz2
 #Source3:	http://prdownloads.sourceforge.net/%{name}/%{name}-rescue-%{_rescuever}.tar.bz2
 Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.gz
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
-Patch0:		bacula-2.0.0-config.diff
-Patch2:		bacula-1.36.1-pidfile.diff
-Patch3:		bacula-2.0.2-updatedb.diff
-Patch5:		bacula-gui-1.38.5-php_header.diff
+Patch0:		bacula-config.diff
+Patch2:		bacula-pidfile.diff
+Patch3:		bacula-updatedb.diff
+Patch5:		bacula-gui-php_header.diff
 Patch6:		bacula-manpages.diff
 Patch7:		bacula-web-mdv_conf.diff
-Patch8:		bacula-2.0.2-gnome2ssl.diff
-Patch9:		bacula-2.0.2-listen.diff
-Patch10:	bacula-2.0.2-cats.diff
-Patch11:	bacula-2.0.2-db.diff
-Patch12:	bacula-2.0.2-libwrap_nsl.diff
+Patch8:		bacula-gnome2ssl.diff
+Patch9:		bacula-listen.diff
+Patch10:	bacula-cats.diff
+Patch11:	bacula-db.diff
+Patch12:	bacula-libwrap_nsl.diff
+Patch13:	bacula-shared_backend_libs.diff
+Patch14:	bacula-qt4_borkiness_fix.diff
 BuildRequires:	XFree86-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -84,11 +88,9 @@ BuildRequires: 	python-devel
 BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
+BuildRequires:	ImageMagick
 BuildRoot:	%{_tmppath}/%{name}-%{version}-buildroot
 
-%if %{TCPW}
-Requires:	tcp_wrappers
-%endif
 %description
 %{blurb}
 Bacula is a set of computer programs that permit you (or the system
@@ -148,8 +150,8 @@ all Jobs run, and all Files saved.
 %package	dir-mysql
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires:	MySQL-client
-BuildRequires:	MySQL-devel >= 3.23
+Requires:	mysql-client
+BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:${version}-%{release}
 Conflicts:	bacula-dir-pgsql bacula-dir-sqlite bacula-dir-sqlite3
@@ -286,6 +288,22 @@ communicate with the Bacula Director.
 This is the wxWindows GUI interface.
 %endif
 
+%if %{BAT}
+%package	bat
+Summary:	Bacula Administration Tool
+Group:		Archiving/Backup
+BuildRequires:	qt4-devel >= 4.2
+BuildRequires:	libqwt-devel
+Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
+Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	usermode, usermode-consoleonly
+
+%description	bat
+%{blurb}
+This is the Bacula Administration Tool package. It is an add-on to 
+the client or server packages.
+%endif
+
 %package	fd
 Summary:	Bacula File services (Client)
 Group:		Archiving/Backup
@@ -392,16 +410,19 @@ The tray monitor for bacula.
 %setup -q -D -T -a 5
 mv %{name}-gui-%{_guiver} gui
 %patch0 -p1 -b .config
-%patch2 -p1 -b .pidfile
+%patch2 -p0 -b .pidfile
 %patch3 -p1 -b .updatedb
-%patch5 -p1 -b .php_header
+%patch5 -p0 -b .php_header
 %patch6 -p0 -b .manpages
 %patch7 -p1
-%patch8 -p1 -b .gnome2ssl
+%patch8 -p0 -b .gnome2ssl
 %patch9 -p1 -b .listen
-%patch10 -p1 -b .cats
-%patch11 -p1 -b .db
+%patch10 -p0 -b .cats
+%patch11 -p0 -b .db
 %patch12 -p1 -b .wrap
+%patch13 -p0 -b .shared_backend_libs
+%patch14 -p0 -b .qt4_borkiness_fix
+
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
 # fix conditional pam config file
@@ -418,13 +439,24 @@ bzcat %{SOURCE7} > bacula.pam
 %endif
 %define _configure_common --enable-smartalloc --sysconfdir=%{_sysconfdir}/%{name} --with-working-dir=%{_localstatedir}/%{name} --with-scriptdir=%{_libexecdir}/%{name} --with-subsys-dir=/var/lock/subsys --with-python --with-openssl --with-readline %{_configure_tcpw}
 
+# temprorary mdv hack because our qt/kde suite is fucked up, still!
+perl -pi -e "s|qmake|/usr/lib/qt4/bin/qmake|g" autoconf/configure.in
+
 %build
+# reconstruct the autofoo stuff
+pushd autoconf
+    aclocal -I bacula-macros -I gettext-macros
+popd
+autoconf --prepend-include=./autoconf autoconf/configure.in > configure
+chmod 755 configure
+
 %serverbuild
+
 %if %{MYSQL}
 %configure --with-mysql \
 	%_configure_common \
 	--without-sqlite --without-postgresql --without-sqlite3 \
-	--disable-gnome --disable-wx-console --disable-tray-monitor
+	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-mysql
@@ -439,7 +471,7 @@ done
 %configure --with-postgresql \
 	%_configure_common \
 	--without-sqlite --without-mysql --without-sqlite3 \
-	--disable-gnome --disable-wx-console --disable-tray-monitor
+	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-postgresql
@@ -454,7 +486,7 @@ done
 %configure --with-sqlite3 \
 	%_configure_common \
 	--without-mysql --without-postgresql --without-sqlite \
-	--disable-gnome --disable-wx-console --disable-tray-monitor
+	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-sqlite3
@@ -472,10 +504,14 @@ done
 	--enable-gnome \
 %endif
 %if %{WXWINDOWS}
-	--enable-wx-console \
+	--enable-bwx-console \
 %endif
 %if %{TRAY}
 	--enable-tray-monitor \
+%endif
+%if %{BAT}
+	--enable-bat \
+	--with-qwt=%{_prefix} \
 %endif
 	--with-dir-password="#FAKE#DIR#PASSWORD#" \
 	--with-fd-password="#FAKE#FD#PASSWORD#" \
@@ -556,16 +592,23 @@ install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bconsole
 ln -s consolehelper %{buildroot}%{_bindir}/bconsole
 
 # install the menu stuff
-%if %{GNOME} || %{WXWINDOWS}
+%if %{GNOME} || %{WXWINDOWS} || %{BAT}
+
 install -d %{buildroot}%{_menudir}
+
 install -d %{buildroot}%{_iconsdir}
-tar jxvf %{SOURCE1} -C %{buildroot}%{_iconsdir}
+install -d %{buildroot}%{_miconsdir}
+install -d %{buildroot}%{_liconsdir}
+
+convert scripts/bacula.png -resize 16x16 %{buildroot}%{_miconsdir}/%{name}.png
+convert scripts/bacula.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}.png
+convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}.png
 %endif
 
 %if %{GNOME}
 cat << EOF > %{buildroot}%{_menudir}/%{name}-console-gnome
 ?package(%{name}-console-gnome): \
-command="%{_bindir}/gnome-console" \
+command="%{_bindir}/bgnome-console" \
 icon="%{name}.png" \
 needs="x11" \
 title="Bacula Console (gnome)" \
@@ -580,26 +623,26 @@ cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}-console-gnome.deskto
 [Desktop Entry]
 Name=Bacula Console (gnome)
 Comment=Bacula Director Console
-Exec=%{_bindir}/gnome-console
+Exec=%{_bindir}/bgnome-console
 Icon=%{name}
 Terminal=false
 Type=Application
 Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;
 EOF
 
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/gnome-console
+cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bgnome-console
 USER=root
-PROGRAM=%{_sbindir}/gnome-console
+PROGRAM=%{_sbindir}/bgnome-console
 SESSION=true
 EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/gnome-console
-ln -s consolehelper %{buildroot}%{_bindir}/gnome-console
+install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bgnome-console
+ln -s consolehelper %{buildroot}%{_bindir}/bgnome-console
 %endif
 
 %if %{WXWINDOWS}
 cat << EOF > %{buildroot}%{_menudir}/%{name}-console-wx
 ?package(%{name}-console-wx): \
-command="%{_bindir}/wx-console" \
+command="%{_bindir}/bwx-console" \
 icon="%{name}.png" \
 needs="x11" \
 title="Bacula Console (wxWindows)" \
@@ -614,23 +657,67 @@ cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}-console-wx.desktop <
 [Desktop Entry]
 Name=Bacula Console (wxWindows)
 Comment=Bacula Director Console
-Exec=%{_bindir}/wx-console
+Exec=%{_bindir}/bwx-console
 Icon=%{name}
 Terminal=false
 Type=Application
 Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;
 EOF
 
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/wx-console
+cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bwx-console
 USER=root
-PROGRAM=%{_sbindir}/wx-console
+PROGRAM=%{_sbindir}/bwx-console
 SESSION=true
 EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/wx-console
-ln -s consolehelper %{buildroot}%{_bindir}/wx-console
+install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bwx-console
+ln -s consolehelper %{buildroot}%{_bindir}/bwx-console
 # we need to install the program files as well
 #install -m 755 src/wx-console/wx-console %{buildroot}%{_sbindir}
 #cp -p src/console/bconsole.conf %{buildroot}%{_sysconfdir}/%{name}/wx-console.conf
+%endif
+
+%if %{BAT}
+install -m0755 src/qt-console/bat %{buildroot}%{_sbindir}/%{name}-bat
+install -m0644 src/qt-console/bat.conf %{buildroot}%{_sysconfdir}/%{name}/bat.conf
+
+# make some icons
+convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdir}/%{name}-bat.png
+convert src/qt-console/images/bat_icon.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}-bat.png
+convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}-bat.png
+
+cat << EOF > %{buildroot}%{_menudir}/%{name}-bat
+?package(%{name}-bat): \
+command="%{_bindir}/%{name}-bat" \
+icon="%{name}-bat.png" \
+needs="x11" \
+title="Bacula Administration Tool" \
+longtitle="Bacula Administration Too" \
+section="System/Archiving/Backup" \
+xdg="true"
+EOF
+
+# XDG menu
+install -d %{buildroot}%{_datadir}/applications
+cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}-bat.desktop << EOF
+[Desktop Entry]
+Name=Bacula Administration Tool (QT4)
+Comment=Bacula Administration Tool
+Exec=%{_bindir}/%{name}-bat
+Icon=%{name}-bat
+Terminal=false
+Type=Application
+Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;
+EOF
+
+cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/%{name}-bat
+USER=root
+PROGRAM=%{_sbindir}/%{name}-bat
+SESSION=true
+EOF
+install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/%{name}-bat
+ln -s consolehelper %{buildroot}%{_bindir}/%{name}-bat
+
+mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1 
 %endif
 
 %if %{TRAY}
@@ -936,6 +1023,15 @@ fi
 %clean_menus
 %endif
 
+%if %{BAT}
+%post bat
+%post_fix_config bat
+%update_menus
+		
+%postun bat
+%clean_menus
+%endif
+
 %if %{TRAY}
 %post tray-monitor
 %post_fix_config tray-monitor
@@ -949,63 +1045,63 @@ fi
 rm -rf %{buildroot}
 
 %files common
-%defattr(644, root, root, 755)
+%defattr(0644,root,root,0755)
 %doc LICENSE
 %dir %{_sysconfdir}/%{name}
-%attr(755, root, root) %{_sbindir}/btraceback
-%attr(755, root, root) %{_sbindir}/bsmtp
-%attr(755, root, root) %{_sbindir}/bregex
-%attr(755, root, root) %{_sbindir}/bwild
+%attr(0755,root,root) %{_sbindir}/btraceback
+%attr(0755,root,root) %{_sbindir}/bsmtp
+%attr(0755,root,root) %{_sbindir}/bregex
+%attr(0755,root,root) %{_sbindir}/bwild
 %dir %{_libexecdir}/%{name}
 %{_libexecdir}/%{name}/btraceback.gdb
 %{_libexecdir}/%{name}/btraceback.dbx
-# i think this should go into bacula-sd
-%attr(755, root, root) %{_libexecdir}/%{name}/dvd-handler
-%attr(770, bacula, bacula) %dir %{_localstatedir}/%{name}
+# i think this should go into %{name}-sd
+%attr(0755,root,root) %{_libexecdir}/%{name}/dvd-handler
+%attr(770, %{name}, %{name}) %dir %{_localstatedir}/%{name}
 %{_mandir}/man1/bsmtp.1*
-%{_mandir}/man8/bacula.8*
+%{_mandir}/man8/%{name}.8*
 %{_mandir}/man8/btraceback.8*
-%exclude %{_libexecdir}/%{name}/bacula
+%exclude %{_mandir}/man1/bat.1*
+%exclude %{_libexecdir}/%{name}/%{name}
 %if ! %{GNOME}
-%exclude %{_mandir}/man1/bacula-console-gnome.1*
+%exclude %{_mandir}/man1/%{name}-console-gnome.1*
 %endif
 %if ! %{TRAY}
-%exclude %{_mandir}/man1/bacula-tray-monitor.1*
+%exclude %{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
 %if ! %{WXWINDOWS}
-%exclude %{_mandir}/man1/bacula-wxconsole.1*
+%exclude %{_mandir}/man1/%{name}-wxconsole.1*
 %endif
 
-
 %files dir-common
-%defattr(644, root, root, 755)
+%defattr(0644,root,root,0755)
 %doc ChangeLog CheckList ReleaseNotes kernstodo LICENSE
 # FIXME : Merge baculs-docs and use it
 #%doc doc/*.pdf doc/manual examples
-%attr(600, root, root) %config(noreplace) %{_sysconfdir}/%{name}/bacula-dir.conf
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-dir.conf
 %ghost %{_sysconfdir}/%{name}/.pw.sed
-%config(noreplace) %{_sysconfdir}/logrotate.d/bacula-dir
-%{_mandir}/man8/bacula-dir.8*
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}-dir
+%{_mandir}/man8/%{name}-dir.8*
 %{_mandir}/man8/dbcheck.8*
 %{_mandir}/man8/bscan.8*
-%defattr (755, root, root)
-%attr(0755,root,root) %{_initrddir}/bacula-dir
-%ghost %{_sbindir}/bacula-dir
+%defattr (0755,root,root)
+%attr(0755,root,root) %{_initrddir}/%{name}-dir
+%ghost %{_sbindir}/%{name}-dir
 %ghost %{_sbindir}/dbcheck
 %ghost %{_sbindir}/bscan
-%ghost %{_libexecdir}/%{name}/create_bacula_database
-%ghost %{_libexecdir}/%{name}/drop_bacula_database
-%ghost %{_libexecdir}/%{name}/drop_bacula_tables
-%ghost %{_libexecdir}/%{name}/grant_bacula_privileges
-%ghost %{_libexecdir}/%{name}/make_bacula_tables
-%ghost %{_libexecdir}/%{name}/update_bacula_tables
+%ghost %{_libexecdir}/%{name}/create_%{name}_database
+%ghost %{_libexecdir}/%{name}/drop_%{name}_database
+%ghost %{_libexecdir}/%{name}/drop_%{name}_tables
+%ghost %{_libexecdir}/%{name}/grant_%{name}_privileges
+%ghost %{_libexecdir}/%{name}/make_%{name}_tables
+%ghost %{_libexecdir}/%{name}/update_%{name}_tables
 %{_libexecdir}/%{name}/make_catalog_backup
 %{_libexecdir}/%{name}/delete_catalog_backup
-%attr(644, root, root) %{_libexecdir}/%{name}/query.sql
-%exclude %{_libexecdir}/%{name}/bacula-ctl-dir
+%attr(0644,root,root) %{_libexecdir}/%{name}/query.sql
+%exclude %{_libexecdir}/%{name}/%{name}-ctl-dir
 
 %files dir-sqlite
-%{_sbindir}/bacula-dir-sqlite
+%{_sbindir}/%{name}-dir-sqlite
 %{_sbindir}/dbcheck-sqlite
 %{_sbindir}/bscan-sqlite
 %{_libexecdir}/%{name}/create_sqlite_database
@@ -1017,7 +1113,7 @@ rm -rf %{buildroot}
 
 %if %{MYSQL}
 %files dir-mysql
-%{_sbindir}/bacula-dir-mysql
+%{_sbindir}/%{name}-dir-mysql
 %{_sbindir}/dbcheck-mysql
 %{_sbindir}/bscan-mysql
 %{_libexecdir}/%{name}/create_mysql_database
@@ -1030,7 +1126,7 @@ rm -rf %{buildroot}
 
 %if %{PGSQL}
 %files dir-pgsql
-%{_sbindir}/bacula-dir-postgresql
+%{_sbindir}/%{name}-dir-postgresql
 %{_sbindir}/dbcheck-postgresql
 %{_sbindir}/bscan-postgresql
 %{_libexecdir}/%{name}/create_postgresql_database
@@ -1043,7 +1139,7 @@ rm -rf %{buildroot}
 
 %if %{SQLITE3}
 %files dir-sqlite3
-%{_sbindir}/bacula-dir-sqlite3
+%{_sbindir}/%{name}-dir-sqlite3
 %{_sbindir}/dbcheck-sqlite3
 %{_sbindir}/bscan-sqlite3
 %{_libexecdir}/%{name}/create_sqlite3_database
@@ -1055,87 +1151,103 @@ rm -rf %{buildroot}
 %endif
 
 %files fd
-%defattr(755, root, root)
+%defattr(0755,root,root)
 %doc LICENSE
-%attr(600, root, root) %config(noreplace) %{_sysconfdir}/%{name}/bacula-fd.conf
-%attr(0755,root,root) %{_initrddir}/bacula-fd
-%{_sbindir}/bacula-fd
-%attr(644, root, root) %{_mandir}/man8/bacula-fd.8*
-%exclude %{_libexecdir}/%{name}/bacula-ctl-fd
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-fd.conf
+%attr(0755,root,root) %{_initrddir}/%{name}-fd
+%{_sbindir}/%{name}-fd
+%attr(0644,root,root) %{_mandir}/man8/%{name}-fd.8*
+%exclude %{_libexecdir}/%{name}/%{name}-ctl-fd
 
 %files sd
-%defattr(755, root, root)
+%defattr(0755,root,root)
 %doc LICENSE
+%attr(0755,root,root) %{_initrddir}/%{name}-sd
 %dir %{_sysconfdir}/%{name}
-%attr(600, root, root) %config(noreplace) %{_sysconfdir}/%{name}/bacula-sd.conf
-%attr(0755,root,root) %{_initrddir}/bacula-sd
-%{_sbindir}/bacula-sd
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-sd.conf
+%{_sbindir}/%{name}-sd
 %{_sbindir}/bcopy
 %{_sbindir}/bextract
 %{_sbindir}/bls
 %{_sbindir}/btape
 %{_libexecdir}/%{name}/mtx-changer
 %{_libexecdir}/%{name}/disk-changer
-%defattr(644, root,root, 755)
-%{_mandir}/man8/bacula-sd.8*
+%defattr(0644,root,root,0755)
+%{_mandir}/man8/%{name}-sd.8*
 %{_mandir}/man8/bcopy.8*
 %{_mandir}/man8/bextract.8*
 %{_mandir}/man8/bls.8*
 %{_mandir}/man8/btape.8*
-%exclude %{_libexecdir}/%{name}/bacula-ctl-sd
+%exclude %{_libexecdir}/%{name}/%{name}-ctl-sd
 
 %files console
-%defattr(644, root, root, 755)
+%defattr(0644,root,root,0755)
 %doc LICENSE
-%attr(600, root, root) %config(noreplace) %{_sysconfdir}/%{name}/bconsole.conf
-%attr(755, root, root) %{_sbindir}/bconsole
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bconsole.conf
 %config(noreplace) %{_sysconfdir}/security/console.apps/bconsole
 %config(noreplace) %{_sysconfdir}/pam.d/bconsole
+%attr(0755,root,root) %{_sbindir}/bconsole
 %verify(link) %{_bindir}/bconsole
 %{_mandir}/man8/bconsole.8*
-%attr(755, root, root) %{_libdir}/%{name}/bconsole
+%attr(0755,root,root) %{_libdir}/%{name}/bconsole
 %exclude %{_libexecdir}/%{name}/bconsole
 
 %if %{GNOME}
 %files console-gnome
-%defattr(644, root, root, 755)
+%defattr(0644,root,root,0755)
 %doc LICENSE
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bgnome-console.conf
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bgnome-console
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bgnome-console
+%attr(0755,root,root) %{_sbindir}/bgnome-console
+%verify(link) %{_bindir}/bgnome-console
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
-%{_menudir}/bacula-console-gnome
+%{_menudir}/%{name}-console-gnome
 %{_datadir}/applications/mandriva-%{name}-console-gnome.desktop
-%attr(600, root, root) %config(noreplace) %{_sysconfdir}/%{name}/gnome-console.conf
-%attr(755, root, root) %{_sbindir}/gnome-console
-%config(noreplace) %{_sysconfdir}/security/console.apps/gnome-console
-%config(noreplace) %{_sysconfdir}/pam.d/gnome-console
-%verify(link) %{_bindir}/gnome-console
-%{_mandir}/man1/bacula-console-gnome.1*
+%{_mandir}/man1/%{name}-bgnome-console.1*
 %endif
 
 %if %{WXWINDOWS}
 %files console-wx
-%defattr(644, root, root, 755)
+%defattr(0644,root,root,0755)
 %doc LICENSE
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bwx-console.conf
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bwx-console
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
+%attr(0755,root,root) %{_sbindir}/bwx-console
+%verify(link) %{_bindir}/bwx-console
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
-%{_menudir}/bacula-console-wx
+%{_menudir}/%{name}-console-wx
 %{_datadir}/applications/mandriva-%{name}-console-wx.desktop
-%attr(600, root, root) %config(noreplace) %{_sysconfdir}/%{name}/wx-console.conf
-%attr(755, root, root) %{_sbindir}/wx-console
-%config(noreplace) %{_sysconfdir}/security/console.apps/wx-console
-%config(noreplace) %{_sysconfdir}/pam.d/wx-console
-%verify(link) %{_bindir}/wx-console
-%{_mandir}/man1/bacula-wxconsole.1*
+%{_mandir}/man1/%{name}-bwxconsole.1*
+%endif
+
+%if %{BAT}
+%files bat
+%defattr(0644,root,root,0755)
+%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bat.conf
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/%{name}-bat
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}-bat
+%attr(0755,root,root) %{_sbindir}/%{name}-bat
+%verify(link) %{_bindir}/%{name}-bat
+%{_menudir}/%{name}-bat
+%{_iconsdir}/%{name}-bat.png
+%{_miconsdir}/%{name}-bat.png
+%{_liconsdir}/%{name}-bat.png
+%{_datadir}/applications/mandriva-%{name}-bat.desktop
+%{_mandir}/man1/%{name}-bat.1*
 %endif
 
 %if %{GUI}
 %files gui-web
-/var/www/html/bacula/*
-%dir %attr(0755,apache,apache) %{_sysconfdir}/bacula/bacula-web
-%attr(0640,apache,apache) %config(noreplace) %{_sysconfdir}/bacula/bacula-web/bacula.conf
-%dir %attr(0755,apache,apache) /var/cache/httpd/bacula-web
+/var/www/html/%{name}/*
+%dir %attr(0755,apache,apache) %{_sysconfdir}/%{name}/%{name}-web
+%attr(0640,apache,apache) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-web/%{name}.conf
+%dir %attr(0755,apache,apache) /var/cache/httpd/%{name}-web
 
 %files gui-bimagemgr
 /var/www/html/bimagemgr/*.gif
@@ -1146,17 +1258,17 @@ rm -rf %{buildroot}
 
 %if %{TRAY}
 %files tray-monitor
-%defattr(644, root, root, 755)
+%defattr(0644,root,root,0755)
 %doc LICENSE
-%config(noreplace) %{_sysconfdir}/bacula/tray-monitor.conf
-%config(noreplace) %{_sysconfdir}/security/console.apps/bacula-tray-monitor
-%config(noreplace) %{_sysconfdir}/pam.d/bacula-tray-monitor
-%{_sbindir}/bacula-tray-monitor
-%verify(link) %{_bindir}/bacula-tray-monitor
+%config(noreplace) %{_sysconfdir}/%{name}/tray-monitor.conf
+%config(noreplace) %{_sysconfdir}/security/console.apps/%{name}-tray-monitor
+%config(noreplace) %{_sysconfdir}/pam.d/%{name}-tray-monitor
+%{_sbindir}/%{name}-tray-monitor
+%verify(link) %{_bindir}/%{name}-tray-monitor
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
-%{_menudir}/bacula-tray-monitor
+%{_menudir}/%{name}-tray-monitor
 %{_datadir}/applications/mandriva-%{name}-tray-monitor.desktop
-%{_mandir}/man1/bacula-tray-monitor.1*
+%{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
