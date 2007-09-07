@@ -1,5 +1,4 @@
-%define _rescuever 2.2.1
-%define _guiver 2.2.1
+%define _guiver 2.2.2
 
 %define _cur_db_ver 10
 
@@ -11,7 +10,6 @@
 %define BAT 0
 %define TCPW 1
 %define GUI 1
-%define RESCUE 0
 %define TRAY 1
 
 %{?_with_mysql: %{expand: %%global MYSQL 1}}
@@ -30,8 +28,6 @@
 %{?_without_wrap: %{expand: %%global TCPW 0}}
 %{?_with_gui: %{expand: %%global GUI 1}}
 %{?_without_gui: %{expand: %%global GUI 0}}
-%{?_with_rescue: %{expand: %%global RESCUE 1}}
-%{?_without_rescue: %{expand: %%global RESCUE 0}}
 %{?_with_tray: %{expand: %%global TRAY 1}}
 %{?_without_tray: %{expand: %%global TRAY 0}}
 
@@ -43,14 +39,13 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.2.1
-Release:	%mkrel 0.0.0
+Version:	2.2.2
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
 URL:		http://www.bacula.org/
 Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
-#Source3:	http://prdownloads.sourceforge.net/%{name}/%{name}-rescue-%{_rescuever}.tar.bz2
 Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.gz
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
