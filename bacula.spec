@@ -7,7 +7,7 @@
 %define SQLITE3 1
 %define GNOME 1
 %define WXWINDOWS 1
-%define BAT 0
+%define BAT 1
 %define TCPW 1
 %define GUI 1
 %define TRAY 1
@@ -40,7 +40,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.2
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
