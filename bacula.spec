@@ -288,7 +288,7 @@ This is the wxWindows GUI interface.
 Summary:	Bacula Administration Tool
 Group:		Archiving/Backup
 BuildRequires:	qt4-devel >= 4.2
-BuildRequires:	libqwt-devel
+BuildRequires:	libqwt-devel >= 5.0.2
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
@@ -1056,7 +1056,7 @@ rm -rf %{buildroot}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/%{name}.8*
 %{_mandir}/man8/btraceback.8*
-%exclude %{_mandir}/man1/bat.1*
+%exclude %{_mandir}/man1/%{name}-bat.1*
 %exclude %{_libexecdir}/%{name}/%{name}
 %if ! %{GNOME}
 %exclude %{_mandir}/man1/%{name}-console-gnome.1*
