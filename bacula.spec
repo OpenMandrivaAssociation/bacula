@@ -1,4 +1,4 @@
-%define _guiver 2.2.2
+%define _guiver 2.2.3
 
 %define _cur_db_ver 10
 
@@ -39,8 +39,8 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.2.2
-Release:	%mkrel 3
+Version:	2.2.3
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -62,7 +62,6 @@ Patch11:	bacula-db.diff
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
-Patch15:	bacula-bug935.diff
 BuildRequires:	XFree86-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -418,7 +417,6 @@ mv %{name}-gui-%{_guiver} gui
 %patch12 -p1 -b .wrap
 %patch13 -p0 -b .shared_backend_libs
 %patch14 -p0 -b .qt4_borkiness_fix
-%patch15 -p1 -b .bug935
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
@@ -1012,6 +1010,11 @@ fi
 %endif
 
 %if %{WXWINDOWS}
+%pre console-wx
+if [ -e %{_sysconfdir}/%{name}/wx-console.conf -a ! -e %{_sysconfdir}/%{name}/bwx-console.conf ]; then
+    mv %{_sysconfdir}/%{name}/wx-console.conf %{_sysconfdir}/%{name}/bwx-console.conf
+fi
+
 %post console-wx
 %post_fix_config wx-console
 %update_menus
