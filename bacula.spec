@@ -31,6 +31,11 @@
 %{?_with_tray: %{expand: %%global TRAY 1}}
 %{?_without_tray: %{expand: %%global TRAY 0}}
 
+%if %mdkversion <= 200700
+%define BAT 0
+%define TRAY 0
+%endif
+
 %define blurb Bacula - It comes by night and sucks the vital essence from your computers.
 
 # fixes passwords in configuration files
@@ -40,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.4
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -148,7 +153,7 @@ Group:		Archiving/Backup
 Requires:	mysql-client
 BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common
-Provides:	bacula-dir = %{epoch}:${version}-%{release}
+Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-pgsql bacula-dir-sqlite bacula-dir-sqlite3
 
 %description	dir-mysql
@@ -171,7 +176,7 @@ Group:		Archiving/Backup
 Requires:	postgresql
 BuildRequires:	postgresql-devel
 Requires:	bacula-dir-common
-Provides:	bacula-dir = %{epoch}:${version}-%{release}
+Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-sqlite bacula-dir-sqlite3
 
 %description	dir-pgsql
@@ -192,9 +197,9 @@ This build requires Postgres to be installed separately as the catalog database.
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	sqlite3-tools
-BuildRequires:	sqlite3-devel
+BuildRequires:	sqlite3-devel >= 3.3.17
 Requires:	bacula-dir-common
-Provides:	bacula-dir = %{epoch}:${version}-%{release}
+Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite
 
 %description	dir-sqlite3
@@ -216,7 +221,7 @@ Group:		Archiving/Backup
 Requires:	sqlite-tools
 BuildRequires:	sqlite-devel
 Requires:	bacula-dir-common
-Provides:	bacula-dir = %{epoch}:${version}-%{release}
+Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite3
 # this might allow urpmi to upgrade correctly
 Obsoletes:	bacula-dir
@@ -268,7 +273,7 @@ This is the GNOME GUI interface.
 Summary:	Bacula wxWindows Console
 Group:		Archiving/Backup
 %if %{mdkversion} >= 1020
-BuildRequires:	wxGTK2.6-devel
+BuildRequires:	wxGTK2.6-devel >= 2.6.1
 %else
 BuildRequires:	wxGTK2.4-devel
 %endif
@@ -389,7 +394,7 @@ Contains the bacula image manager cgi-bin
 %package	tray-monitor
 Summary:	Bacula Tray Monitor
 Group:		Archiving/Backup
-BuildRequires:	gtk2-devel
+BuildRequires:	gtk2-devel >= 2.4
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
@@ -714,6 +719,8 @@ ln -s consolehelper %{buildroot}%{_bindir}/%{name}-bat
 
 mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1 
 %endif
+
+rm -f %{buildroot}%{_mandir}/man1/bat.1*
 
 %if %{TRAY}
 cat << EOF > %{buildroot}%{_menudir}/%{name}-tray-monitor
@@ -1061,7 +1068,6 @@ rm -rf %{buildroot}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/%{name}.8*
 %{_mandir}/man8/btraceback.8*
-%exclude %{_mandir}/man1/%{name}-bat.1*
 %exclude %{_libexecdir}/%{name}/%{name}
 %if ! %{GNOME}
 %exclude %{_mandir}/man1/%{name}-console-gnome.1*
@@ -1071,6 +1077,9 @@ rm -rf %{buildroot}
 %endif
 %if ! %{WXWINDOWS}
 %exclude %{_mandir}/man1/%{name}-wxconsole.1*
+%endif
+%if %{BAT}
+%exclude %{_mandir}/man1/%{name}-bat.1*
 %endif
 
 %files dir-common
