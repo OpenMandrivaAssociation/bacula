@@ -1,4 +1,4 @@
-%define _guiver 2.2.5
+%define _guiver 2.2.6-1
 
 %define _cur_db_ver 10
 
@@ -44,7 +44,7 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.2.5
+Version:	2.2.6
 Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
@@ -443,6 +443,8 @@ bzcat %{SOURCE7} > bacula.pam
 perl -pi -e "s|qmake|/usr/lib/qt4/bin/qmake|g" autoconf/configure.in
 
 %build
+export QMAKE="/usr/lib/qt4/bin/qmake"
+
 # reconstruct the autofoo stuff
 pushd autoconf
     aclocal -I bacula-macros -I gettext-macros
