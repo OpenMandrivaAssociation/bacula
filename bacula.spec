@@ -67,7 +67,7 @@ Patch11:	bacula-db.diff
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
-BuildRequires:	XFree86-devel
+BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
@@ -570,9 +570,9 @@ done
 
 # install the init scripts
 install -d %{buildroot}%{_initrddir}
-install -m 755 platforms/mandrake/bacula-dir %{buildroot}%{_initrddir}/bacula-dir
-install -m 755 platforms/mandrake/bacula-fd %{buildroot}%{_initrddir}/bacula-fd
-install -m 755 platforms/mandrake/bacula-sd %{buildroot}%{_initrddir}/bacula-sd
+install -m 755 platforms/Mandriva/bacula-dir %{buildroot}%{_initrddir}/bacula-dir
+install -m 755 platforms/Mandriva/bacula-fd %{buildroot}%{_initrddir}/bacula-fd
+install -m 755 platforms/Mandriva/bacula-sd %{buildroot}%{_initrddir}/bacula-sd
 
 # install the logrotate file
 install -d %{buildroot}%{_sysconfdir}/logrotate.d
