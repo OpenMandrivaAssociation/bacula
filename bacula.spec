@@ -89,6 +89,7 @@ BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
 BuildRequires:	ImageMagick
+BuildRoot:	%{_tmppath}/%{name}-%{version}-buildroot
 
 %description
 %{blurb}
