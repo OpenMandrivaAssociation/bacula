@@ -44,7 +44,7 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.2.6
+Version:	2.2.7
 Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
@@ -89,7 +89,7 @@ BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
 BuildRequires:	ImageMagick
-BuildRoot:	%{_tmppath}/%{name}-%{version}-buildroot
+Buildroot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 %{blurb}
