@@ -1,4 +1,4 @@
-%define _guiver 2.2.6-1
+%define _guiver 2.2.7
 
 %define _cur_db_ver 10
 
