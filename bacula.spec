@@ -596,7 +596,6 @@ ln -s consolehelper %{buildroot}%{_bindir}/bconsole
 # install the menu stuff
 %if %{GNOME} || %{WXWINDOWS} || %{BAT}
 
-install -d %{buildroot}%{_menudir}
 
 install -d %{buildroot}%{_iconsdir}
 install -d %{buildroot}%{_miconsdir}
@@ -608,16 +607,6 @@ convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}.png
 %endif
 
 %if %{GNOME}
-cat << EOF > %{buildroot}%{_menudir}/%{name}-console-gnome
-?package(%{name}-console-gnome): \
-command="%{_bindir}/bgnome-console" \
-icon="%{name}.png" \
-needs="x11" \
-title="Bacula Console (gnome)" \
-longtitle="Bacula Director Console" \
-section="System/Archiving/Backup" \
-xdg="true"
-EOF
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -642,16 +631,6 @@ ln -s consolehelper %{buildroot}%{_bindir}/bgnome-console
 %endif
 
 %if %{WXWINDOWS}
-cat << EOF > %{buildroot}%{_menudir}/%{name}-console-wx
-?package(%{name}-console-wx): \
-command="%{_bindir}/bwx-console" \
-icon="%{name}.png" \
-needs="x11" \
-title="Bacula Console (wxWindows)" \
-longtitle="Bacula Director Console" \
-section="System/Archiving/Backup" \
-xdg="true"
-EOF
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -687,16 +666,6 @@ convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdi
 convert src/qt-console/images/bat_icon.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}-bat.png
 convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}-bat.png
 
-cat << EOF > %{buildroot}%{_menudir}/%{name}-bat
-?package(%{name}-bat): \
-command="%{_bindir}/%{name}-bat" \
-icon="%{name}-bat.png" \
-needs="x11" \
-title="Bacula Administration Tool" \
-longtitle="Bacula Administration Too" \
-section="System/Archiving/Backup" \
-xdg="true"
-EOF
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -725,16 +694,6 @@ mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1
 rm -f %{buildroot}%{_mandir}/man1/bat.1*
 
 %if %{TRAY}
-cat << EOF > %{buildroot}%{_menudir}/%{name}-tray-monitor
-?package(%{name}-tray-monitor): \
-command="%{_bindir}/bacula-tray-monitor" \
-icon="%{name}.png" \
-needs="x11" \
-title="Bacula Tray Monitor" \
-longtitle="Bacula Tray Monitor" \
-section="System/Archiving/Backup" \
-xdg="true"
-EOF
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -1215,7 +1174,6 @@ rm -rf %{buildroot}
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
-%{_menudir}/%{name}-console-gnome
 %{_datadir}/applications/mandriva-%{name}-console-gnome.desktop
 %{_mandir}/man1/%{name}-bgnome-console.1*
 %endif
@@ -1232,7 +1190,6 @@ rm -rf %{buildroot}
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
-%{_menudir}/%{name}-console-wx
 %{_datadir}/applications/mandriva-%{name}-console-wx.desktop
 %{_mandir}/man1/%{name}-bwxconsole.1*
 %endif
@@ -1245,7 +1202,6 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}-bat
 %attr(0755,root,root) %{_sbindir}/%{name}-bat
 %verify(link) %{_bindir}/%{name}-bat
-%{_menudir}/%{name}-bat
 %{_iconsdir}/%{name}-bat.png
 %{_miconsdir}/%{name}-bat.png
 %{_liconsdir}/%{name}-bat.png
@@ -1279,7 +1235,6 @@ rm -rf %{buildroot}
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
-%{_menudir}/%{name}-tray-monitor
 %{_datadir}/applications/mandriva-%{name}-tray-monitor.desktop
 %{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
