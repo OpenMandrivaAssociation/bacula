@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.7
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -197,7 +197,7 @@ This build requires Postgres to be installed separately as the catalog database.
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	sqlite3-tools
-BuildRequires:	sqlite3-devel >= 3.3.17
+BuildRequires:	sqlite3-devel >= 3.4.2
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite
