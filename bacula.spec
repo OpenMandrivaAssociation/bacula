@@ -196,7 +196,7 @@ This build requires Postgres to be installed separately as the catalog database.
 %package	dir-sqlite3
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires:	sqlite3-tools
+Requires:	sqlite3-tools >= 3.4.2
 BuildRequires:	sqlite3-devel >= 3.4.2
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
