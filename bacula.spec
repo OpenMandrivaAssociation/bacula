@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.7
-Release:	%mkrel 2
+Release:	%mkrel 3
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -67,6 +67,7 @@ Patch11:	bacula-db.diff
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
+Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -422,6 +423,7 @@ mv %{name}-gui-%{_guiver} gui
 %patch12 -p1 -b .wrap
 %patch13 -p0 -b .shared_backend_libs
 %patch14 -p0 -b .qt4_borkiness_fix
+%patch15 -p1 -b .some_scripts_should_be_configuration_files
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
@@ -595,7 +597,6 @@ ln -s consolehelper %{buildroot}%{_bindir}/bconsole
 
 # install the menu stuff
 %if %{GNOME} || %{WXWINDOWS} || %{BAT}
-
 
 install -d %{buildroot}%{_iconsdir}
 install -d %{buildroot}%{_miconsdir}
@@ -1016,6 +1017,7 @@ rm -rf %{buildroot}
 %defattr(0644,root,root,0755)
 %doc LICENSE
 %dir %{_sysconfdir}/%{name}
+%dir %{_sysconfdir}/%{name}/scripts
 %attr(0755,root,root) %{_sbindir}/btraceback
 %attr(0755,root,root) %{_sbindir}/bsmtp
 %attr(0755,root,root) %{_sbindir}/bregex
@@ -1024,7 +1026,7 @@ rm -rf %{buildroot}
 %{_libexecdir}/%{name}/btraceback.gdb
 %{_libexecdir}/%{name}/btraceback.dbx
 # i think this should go into %{name}-sd
-%attr(0755,root,root) %{_libexecdir}/%{name}/dvd-handler
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/dvd-handler
 %attr(770, %{name}, %{name}) %dir %{_localstatedir}/%{name}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/%{name}.8*
@@ -1065,9 +1067,9 @@ rm -rf %{buildroot}
 %ghost %{_libexecdir}/%{name}/grant_%{name}_privileges
 %ghost %{_libexecdir}/%{name}/make_%{name}_tables
 %ghost %{_libexecdir}/%{name}/update_%{name}_tables
-%{_libexecdir}/%{name}/make_catalog_backup
-%{_libexecdir}/%{name}/delete_catalog_backup
-%attr(0644,root,root) %{_libexecdir}/%{name}/query.sql
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/make_catalog_backup
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/delete_catalog_backup
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/query.sql
 %exclude %{_libexecdir}/%{name}/%{name}-ctl-dir
 
 %files dir-sqlite
@@ -1140,8 +1142,8 @@ rm -rf %{buildroot}
 %{_sbindir}/bextract
 %{_sbindir}/bls
 %{_sbindir}/btape
-%{_libexecdir}/%{name}/mtx-changer
-%{_libexecdir}/%{name}/disk-changer
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/mtx-changer
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/disk-changer
 %defattr(0644,root,root,0755)
 %{_mandir}/man8/%{name}-sd.8*
 %{_mandir}/man8/bcopy.8*
