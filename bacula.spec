@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.8
-Release:	%mkrel 2
+Release:	%mkrel 3
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -619,7 +619,7 @@ Exec=%{_bindir}/bgnome-console
 Icon=%{name}
 Terminal=false
 Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;
+Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
 EOF
 
 cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bgnome-console
@@ -643,7 +643,7 @@ Exec=%{_bindir}/bwx-console
 Icon=%{name}
 Terminal=false
 Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;
+Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
 EOF
 
 cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bwx-console
@@ -678,7 +678,7 @@ Exec=%{_bindir}/%{name}-bat
 Icon=%{name}-bat
 Terminal=false
 Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;
+Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
 EOF
 
 cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/%{name}-bat
@@ -706,7 +706,7 @@ Exec=%{_bindir}/bacula-tray-monitor
 Icon=%{name}
 Terminal=false
 Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;
+Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
 EOF
 
 cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bacula-tray-monitor
