@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.8
-Release:	%mkrel 3
+Release:	%mkrel 4
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -55,6 +55,7 @@ Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.g
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
 Patch0:		bacula-config.diff
+Patch1:		nagios-check_bacula.diff
 Patch2:		bacula-pidfile.diff
 Patch3:		bacula-updatedb.diff
 Patch5:		bacula-gui-php_header.diff
@@ -405,12 +406,20 @@ Requires:	usermode, usermode-consoleonly
 The tray monitor for bacula.
 %endif
 
+%package -n	nagios-check_bacula
+Summary:	The check_bacula plugin for nagios
+Group:		Networking/Other
+
+%description -n	nagios-check_bacula
+The check_bacula plugin for nagios.
+
 %prep
 
 %setup -q
 %setup -q -D -T -a 5
 mv %{name}-gui-%{_guiver} gui
 %patch0 -p1 -b .config
+%patch1 -p0 -b .nagios-check_bacula
 %patch2 -p0 -b .pidfile
 %patch3 -p1 -b .updatedb
 %patch5 -p0 -b .php_header
@@ -444,6 +453,10 @@ bzcat %{SOURCE7} > bacula.pam
 # temprorary mdv hack because our qt/kde suite is fucked up, still!
 perl -pi -e "s|qmake|/usr/lib/qt4/bin/qmake|g" autoconf/configure.in
 
+pushd src
+    tar -zxf ../examples/nagios/nagios_plugin_check_bacula.tgz
+popd
+
 %build
 export QMAKE="/usr/lib/qt4/bin/qmake"
 
@@ -462,6 +475,12 @@ chmod 755 configure
 	--without-sqlite --without-postgresql --without-sqlite3 \
 	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
+
+# make the nagios plugin
+pushd src/check_bacula
+%make LIBS="-lpthread -ldl  -lintl -lssl -lcrypto"
+popd
+
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-mysql
 done
@@ -746,6 +765,20 @@ mv %{buildroot}/var/www/html/bacula/bacula-web/configs/bacula.conf %{buildroot}%
 rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 %endif
 
+# install the nagios plugin
+install -d %{buildroot}%{_sysconfdir}/nagios/plugins.d
+install -d %{buildroot}%{_libdir}/nagios/plugins
+
+install -m0755 src/check_bacula/check_bacula %{buildroot}%{_libdir}/nagios/plugins/
+
+cat > %{buildroot}%{_sysconfdir}/nagios/plugins.d/check_bacula.cfg << EOF
+# 'check_bacula' command definition
+define command{
+	command_name	check_bacula
+	command_line	%{_libdir}/nagios/plugins/check_bacula -H \$HOSTADDRESS$ -D \$ARG1\$ -M \$ARG2\$ -K \$ARG3\$ -P \$ARG4\$
+	}
+EOF
+
 %pre common
 %_pre_useradd bacula %{_localstatedir}/%{name} /bin/false
 
@@ -1010,6 +1043,14 @@ fi
 %clean_menus
 %endif
 
+%post -n nagios-check_bacula
+%{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
+
+%postun -n nagios-check_bacula
+if [ "$1" = "0" ]; then
+    %{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
+fi
+
 %clean
 rm -rf %{buildroot}
 
@@ -1240,3 +1281,8 @@ rm -rf %{buildroot}
 %{_datadir}/applications/mandriva-%{name}-tray-monitor.desktop
 %{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
+
+%files -n nagios-check_bacula
+%defattr(-,root,root)
+%attr(0644,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/nagios/plugins.d/check_bacula.cfg
+%{_libdir}/nagios/plugins/check_bacula
