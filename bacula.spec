@@ -439,7 +439,7 @@ mv %{name}-gui-%{_guiver} gui
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 
 %patch50 -p0 -b .bacula-conf
-%patch51 -p0 -b .jobmedia
+%patch51 -p1 -b .jobmedia
 %patch52 -p0 -b .pool-source
 %patch53 -p0 -b .strip-path
 
