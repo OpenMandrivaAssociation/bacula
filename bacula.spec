@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.8
-Release:	%mkrel 5
+Release:	%mkrel 6
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -69,6 +69,10 @@ Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
+Patch50:	2.2.8-bacula-conf.patch
+Patch51:	2.2.8-jobmedia.patch
+Patch52:	2.2.8-pool-source.patch
+Patch53:	2.2.8-strip-path.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -434,6 +438,11 @@ mv %{name}-gui-%{_guiver} gui
 %patch14 -p0 -b .qt4_borkiness_fix
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 
+%patch50 -p0 -b .bacula-conf
+%patch51 -p0 -b .jobmedia
+%patch52 -p0 -b .pool-source
+%patch53 -p0 -b .strip-path
+
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
 # fix conditional pam config file
@@ -617,7 +626,7 @@ ln -s consolehelper %{buildroot}%{_bindir}/bconsole
 # install the menu stuff
 %if %{GNOME} || %{WXWINDOWS} || %{BAT}
 
-%if %mdkversion <= 200810
+%if %mdkversion <= 200700
 install -d %{buildroot}%{_menudir}
 %endif
 
@@ -632,7 +641,7 @@ convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}.png
 
 %if %{GNOME}
 
-%if %mdkversion <= 200810
+%if %mdkversion <= 200700
 cat << EOF > %{buildroot}%{_menudir}/%{name}-console-gnome
 ?package(%{name}-console-gnome): \
 command="%{_bindir}/bgnome-console" \
@@ -640,10 +649,7 @@ icon="%{name}.png" \
 needs="x11" \
 title="Bacula Console (gnome)" \
 longtitle="Bacula Director Console" \
-section="System/Archiving/Backup" \
-%if %{mdkversion} >= 200610
-xdg=true
-%endif
+section="System/Archiving/Backup"
 EOF
 %endif
 
@@ -671,7 +677,7 @@ ln -s consolehelper %{buildroot}%{_bindir}/bgnome-console
 
 %if %{WXWINDOWS}
 
-%if %mdkversion <= 200810
+%if %mdkversion <= 200700
 cat << EOF > %{buildroot}%{_menudir}/%{name}-console-wx
 ?package(%{name}-console-wx): \
 command="%{_bindir}/bwx-console" \
@@ -679,10 +685,7 @@ icon="%{name}.png" \
 needs="x11" \
 title="Bacula Console (wxWindows)" \
 longtitle="Bacula Director Console" \
-section="System/Archiving/Backup" \
-%if %{mdkversion} >= 200610
-xdg=true
-%endif
+section="System/Archiving/Backup"
 EOF
 %endif
 
@@ -720,7 +723,7 @@ convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdi
 convert src/qt-console/images/bat_icon.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}-bat.png
 convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}-bat.png
 
-%if %mdkversion <= 200810
+%if %mdkversion <= 200700
 cat << EOF > %{buildroot}%{_menudir}/%{name}-bat
 ?package(%{name}-bat): \
 command="%{_bindir}/%{name}-bat" \
@@ -728,10 +731,7 @@ icon="%{name}-bat.png" \
 needs="x11" \
 title="Bacula Administration Tool" \
 longtitle="Bacula Administration Too" \
-section="System/Archiving/Backup" \
-%if %{mdkversion} >= 200610
-xdg=true
-%endif
+section="System/Archiving/Backup"
 EOF
 %endif
 
@@ -763,7 +763,7 @@ rm -f %{buildroot}%{_mandir}/man1/bat.1*
 
 %if %{TRAY}
 
-%if %mdkversion <= 200810
+%if %mdkversion <= 200700
 cat << EOF > %{buildroot}%{_menudir}/%{name}-tray-monitor
 ?package(%{name}-tray-monitor): \
 command="%{_bindir}/bacula-tray-monitor" \
@@ -771,10 +771,7 @@ icon="%{name}.png" \
 needs="x11" \
 title="Bacula Tray Monitor" \
 longtitle="Bacula Tray Monitor" \
-section="System/Archiving/Backup" \
-%if %{mdkversion} >= 200610
-xdg=true
-%endif
+section="System/Archiving/Backup"
 EOF
 %endif
 
@@ -1277,7 +1274,7 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bgnome-console
 %attr(0755,root,root) %{_sbindir}/bgnome-console
 %verify(link) %{_bindir}/bgnome-console
-%if %{mdkversion} <= 200810
+%if %{mdkversion} <= 200700
 %{_menudir}/%{name}-console-gnome
 %endif
 %{_iconsdir}/%{name}.png
@@ -1296,7 +1293,7 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
 %attr(0755,root,root) %{_sbindir}/bwx-console
 %verify(link) %{_bindir}/bwx-console
-%if %{mdkversion} <= 200810
+%if %{mdkversion} <= 200700
 %{_menudir}/%{name}-console-wx
 %endif
 %{_iconsdir}/%{name}.png
@@ -1314,7 +1311,7 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}-bat
 %attr(0755,root,root) %{_sbindir}/%{name}-bat
 %verify(link) %{_bindir}/%{name}-bat
-%if %{mdkversion} <= 200810
+%if %{mdkversion} <= 200700
 %{_menudir}/%{name}-bat
 %endif
 %{_iconsdir}/%{name}-bat.png
@@ -1347,7 +1344,7 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/pam.d/%{name}-tray-monitor
 %{_sbindir}/%{name}-tray-monitor
 %verify(link) %{_bindir}/%{name}-tray-monitor
-%if %{mdkversion} <= 200810
+%if %{mdkversion} <= 200700
 %{_menudir}/%{name}-tray-monitor
 %endif
 %{_iconsdir}/%{name}.png
