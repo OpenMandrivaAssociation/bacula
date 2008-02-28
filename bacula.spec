@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.8
-Release:	%mkrel 4
+Release:	%mkrel 5
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -617,6 +617,10 @@ ln -s consolehelper %{buildroot}%{_bindir}/bconsole
 # install the menu stuff
 %if %{GNOME} || %{WXWINDOWS} || %{BAT}
 
+%if %mdkversion <= 200810
+install -d %{buildroot}%{_menudir}
+%endif
+
 install -d %{buildroot}%{_iconsdir}
 install -d %{buildroot}%{_miconsdir}
 install -d %{buildroot}%{_liconsdir}
@@ -627,6 +631,21 @@ convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}.png
 %endif
 
 %if %{GNOME}
+
+%if %mdkversion <= 200810
+cat << EOF > %{buildroot}%{_menudir}/%{name}-console-gnome
+?package(%{name}-console-gnome): \
+command="%{_bindir}/bgnome-console" \
+icon="%{name}.png" \
+needs="x11" \
+title="Bacula Console (gnome)" \
+longtitle="Bacula Director Console" \
+section="System/Archiving/Backup" \
+%if %{mdkversion} >= 200610
+xdg=true
+%endif
+EOF
+%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -651,6 +670,21 @@ ln -s consolehelper %{buildroot}%{_bindir}/bgnome-console
 %endif
 
 %if %{WXWINDOWS}
+
+%if %mdkversion <= 200810
+cat << EOF > %{buildroot}%{_menudir}/%{name}-console-wx
+?package(%{name}-console-wx): \
+command="%{_bindir}/bwx-console" \
+icon="%{name}.png" \
+needs="x11" \
+title="Bacula Console (wxWindows)" \
+longtitle="Bacula Director Console" \
+section="System/Archiving/Backup" \
+%if %{mdkversion} >= 200610
+xdg=true
+%endif
+EOF
+%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -686,6 +720,20 @@ convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdi
 convert src/qt-console/images/bat_icon.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}-bat.png
 convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}-bat.png
 
+%if %mdkversion <= 200810
+cat << EOF > %{buildroot}%{_menudir}/%{name}-bat
+?package(%{name}-bat): \
+command="%{_bindir}/%{name}-bat" \
+icon="%{name}-bat.png" \
+needs="x11" \
+title="Bacula Administration Tool" \
+longtitle="Bacula Administration Too" \
+section="System/Archiving/Backup" \
+%if %{mdkversion} >= 200610
+xdg=true
+%endif
+EOF
+%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -714,6 +762,21 @@ mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1
 rm -f %{buildroot}%{_mandir}/man1/bat.1*
 
 %if %{TRAY}
+
+%if %mdkversion <= 200810
+cat << EOF > %{buildroot}%{_menudir}/%{name}-tray-monitor
+?package(%{name}-tray-monitor): \
+command="%{_bindir}/bacula-tray-monitor" \
+icon="%{name}.png" \
+needs="x11" \
+title="Bacula Tray Monitor" \
+longtitle="Bacula Tray Monitor" \
+section="System/Archiving/Backup" \
+%if %{mdkversion} >= 200610
+xdg=true
+%endif
+EOF
+%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -1214,6 +1277,9 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bgnome-console
 %attr(0755,root,root) %{_sbindir}/bgnome-console
 %verify(link) %{_bindir}/bgnome-console
+%if %{mdkversion} <= 200810
+%{_menudir}/%{name}-console-gnome
+%endif
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
@@ -1230,6 +1296,9 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
 %attr(0755,root,root) %{_sbindir}/bwx-console
 %verify(link) %{_bindir}/bwx-console
+%if %{mdkversion} <= 200810
+%{_menudir}/%{name}-console-wx
+%endif
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
@@ -1245,6 +1314,9 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}-bat
 %attr(0755,root,root) %{_sbindir}/%{name}-bat
 %verify(link) %{_bindir}/%{name}-bat
+%if %{mdkversion} <= 200810
+%{_menudir}/%{name}-bat
+%endif
 %{_iconsdir}/%{name}-bat.png
 %{_miconsdir}/%{name}-bat.png
 %{_liconsdir}/%{name}-bat.png
@@ -1275,6 +1347,9 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/pam.d/%{name}-tray-monitor
 %{_sbindir}/%{name}-tray-monitor
 %verify(link) %{_bindir}/%{name}-tray-monitor
+%if %{mdkversion} <= 200810
+%{_menudir}/%{name}-tray-monitor
+%endif
 %{_iconsdir}/%{name}.png
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
