@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.2.8
-Release:	%mkrel 6
+Release:	%mkrel 7
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -73,6 +73,7 @@ Patch50:	2.2.8-bacula-conf.patch
 Patch51:	2.2.8-jobmedia.patch
 Patch52:	2.2.8-pool-source.patch
 Patch53:	2.2.8-strip-path.patch
+Patch54:	2.2.8-jobmedia-fix.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -442,6 +443,7 @@ mv %{name}-gui-%{_guiver} gui
 %patch51 -p1 -b .jobmedia
 %patch52 -p0 -b .pool-source
 %patch53 -p0 -b .strip-path
+%patch54 -p0 -b .jobmedia-fix
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
