@@ -459,7 +459,7 @@ bzcat %{SOURCE7} > bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --sysconfdir=%{_sysconfdir}/%{name} --with-working-dir=%{_localstatedir}/%{name} --with-scriptdir=%{_libexecdir}/%{name} --with-subsys-dir=/var/lock/subsys --with-python --with-openssl --with-readline %{_configure_tcpw}
+%define _configure_common --enable-smartalloc --sysconfdir=%{_sysconfdir}/%{name} --with-working-dir=%{_localstatedir}/lib/%{name} --with-scriptdir=%{_libexecdir}/%{name} --with-subsys-dir=/var/lock/subsys --with-python --with-openssl --with-readline %{_configure_tcpw}
 
 # temprorary mdv hack because our qt/kde suite is fucked up, still!
 perl -pi -e "s|qmake|/usr/lib/qt4/bin/qmake|g" autoconf/configure.in
@@ -572,7 +572,7 @@ done
 %install
 rm -rf %{buildroot}
 
-%makeinstall sysconfdir=%{buildroot}%{_sysconfdir}/%{name} scriptdir=%{buildroot}%{_libexecdir}/%{name} working_dir=%{buildroot}%{_localstatedir}/%{name}
+%makeinstall sysconfdir=%{buildroot}%{_sysconfdir}/%{name} scriptdir=%{buildroot}%{_libexecdir}/%{name} working_dir=%{buildroot}%{_localstatedir}/lib/%{name}
 
 # install the catalog scripts and binaries
 for db_type in \
@@ -610,7 +610,7 @@ install -m 755 platforms/mandrake/bacula-sd %{buildroot}%{_initrddir}/bacula-sd
 install -d %{buildroot}%{_sysconfdir}/logrotate.d
 cp scripts/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/bacula-dir
 
-install -d %{buildroot}%{_localstatedir}/%{name}
+install -d %{buildroot}%{_localstatedir}/lib/%{name}
 
 install -d %{buildroot}%{_sysconfdir}/security/console.apps
 install -d %{buildroot}%{_sysconfdir}/pam.d
@@ -842,7 +842,7 @@ define command{
 EOF
 
 %pre common
-%_pre_useradd bacula %{_localstatedir}/%{name} /bin/false
+%_pre_useradd bacula %{_localstatedir}/lib/%{name} /bin/false
 
 %postun common
 %_postun_userdel bacula
@@ -905,7 +905,7 @@ if [ -z "$DB_VER" ]; then
 	echo 	%{_libexecdir}/%{name}/update_bacula_tables
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
-	mysqldump -f --opt bacula | bzip2 > %{_localstatedir}/%{name}/bacula_backup.sql.bz2
+	mysqldump -f --opt bacula | bzip2 > %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2
 	echo "Upgrading bacula tables"
 	if [ "$DB_VER" -lt "4" ]; then
 		echo "your bacula database version is too old to be upgraded automatically"
@@ -918,10 +918,10 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	fi
 	%{_libexecdir}/%{name}/update_bacula_tables
 
-	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/%{name}/bacula_backup.sql.bz2"
+	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2"
 fi
-chown -R bacula:bacula %{_localstatedir}/%{name}
-chmod -R u+rX,go-rwx %{_localstatedir}/%{name}
+chown -R bacula:bacula %{_localstatedir}/lib/%{name}
+chmod -R u+rX,go-rwx %{_localstatedir}/lib/%{name}
 %endif
 
 %if %{PGSQL}
@@ -947,7 +947,7 @@ if [ -z "$DB_VER" ]; then
 	echo 	%{_libexecdir}/%{name}/update_bacula_tables
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
-	pg_dump bacula | bzip2 > %{_localstatedir}/%{name}/bacula_backup.sql.bz2
+	pg_dump bacula | bzip2 > %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2
 	echo "Upgrading bacula tables"
 	if [ "$DB_VER" -lt "7" ]; then
 		echo "your bacula database version is too old to be upgraded automatically"
@@ -960,10 +960,10 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	fi
 	%{_libexecdir}/%{name}/update_bacula_tables
 
-	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/%{name}/bacula_backup.sql.bz2"
+	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2"
 fi
-chown -R bacula:bacula %{_localstatedir}/%{name}
-chmod -R u+rX,go-rwx %{_localstatedir}/%{name}
+chown -R bacula:bacula %{_localstatedir}/lib/%{name}
+chmod -R u+rX,go-rwx %{_localstatedir}/lib/%{name}
 %endif
 
 %if %{SQLITE3}
@@ -976,9 +976,9 @@ done
 ln -snf bacula-dir-sqlite3 %{_sbindir}/bacula-dir
 ln -snf bscan-sqlite3 %{_sbindir}/bscan
 ln -snf dbcheck-sqlite3 %{_sbindir}/dbcheck
-[ -s %{_localstatedir}/%{name}/bacula.db ] && \
+[ -s %{_localstatedir}/lib/%{name}/bacula.db ] && \
 	DB_VER=`echo "select * from Version;" | \
-		sqlite3 %{_localstatedir}/%{name}/bacula.db | tail -n 1 2>/dev/null`
+		sqlite3 %{_localstatedir}/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
 # grant privileges and create tables
 	%{_libexecdir}/%{name}/grant_bacula_privileges > dev/null
@@ -986,7 +986,7 @@ if [ -z "$DB_VER" ]; then
 	%{_libexecdir}/%{name}/make_bacula_tables > dev/null
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
-	echo ".dump" | sqlite3 %{_localstatedir}/%{name}/bacula.db | bzip2 > %{_localstatedir}/%{name}/bacula_backup.sql.bz2
+	echo ".dump" | sqlite3 %{_localstatedir}/lib/%{name}/bacula.db | bzip2 > %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2
 	echo "Upgrading bacula tables"
 	if [ "$DB_VER" -lt "8" ]; then
 		echo "your bacula database version is too old to be upgraded automatically"
@@ -999,10 +999,10 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	fi
 	%{_libexecdir}/%{name}/update_bacula_tables
 
-	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/%{name}/bacula_backup.sql.bz2"
+	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2"
 fi
-chown -R bacula:bacula %{_localstatedir}/%{name}
-chmod -R u+rX,go-rwx %{_localstatedir}/%{name}
+chown -R bacula:bacula %{_localstatedir}/lib/%{name}
+chmod -R u+rX,go-rwx %{_localstatedir}/lib/%{name}
 %endif
 
 %post dir-sqlite
@@ -1014,9 +1014,9 @@ done
 ln -snf bacula-dir-sqlite %{_sbindir}/bacula-dir
 ln -snf bscan-sqlite %{_sbindir}/bscan
 ln -snf dbcheck-sqlite %{_sbindir}/dbcheck
-[ -s %{_localstatedir}/%{name}/bacula.db ] && \
+[ -s %{_localstatedir}/lib/%{name}/bacula.db ] && \
 	DB_VER=`echo "select * from Version;" | \
-		sqlite %{_localstatedir}/%{name}/bacula.db | tail -n 1 2>/dev/null`
+		sqlite %{_localstatedir}/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
 # grant privileges and create tables
 	%{_libexecdir}/%{name}/grant_bacula_privileges > dev/null
@@ -1024,7 +1024,7 @@ if [ -z "$DB_VER" ]; then
 	%{_libexecdir}/%{name}/make_bacula_tables > dev/null
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
-	echo ".dump" | sqlite %{_localstatedir}/%{name}/bacula.db | bzip2 > %{_localstatedir}/%{name}/bacula_backup.sql.bz2
+	echo ".dump" | sqlite %{_localstatedir}/lib/%{name}/bacula.db | bzip2 > %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2
 	echo "Upgrading bacula tables"
 	if [ "$DB_VER" -lt "4" ]; then
 		echo "your bacula database version is too old to be upgraded automatically"
@@ -1037,10 +1037,10 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	fi
 	%{_libexecdir}/%{name}/update_bacula_tables
 
-	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/%{name}/bacula_backup.sql.bz2"
+	echo "If bacula works correctly you can remove the backup file %{_localstatedir}/lib/%{name}/bacula_backup.sql.bz2"
 fi
-chown -R bacula:bacula %{_localstatedir}/%{name}
-chmod -R u+rX,go-rwx %{_localstatedir}/%{name}
+chown -R bacula:bacula %{_localstatedir}/lib/%{name}
+chmod -R u+rX,go-rwx %{_localstatedir}/lib/%{name}
 
 %post fd
 %post_fix_config bacula-fd
@@ -1130,7 +1130,7 @@ rm -rf %{buildroot}
 %{_libexecdir}/%{name}/btraceback.dbx
 # i think this should go into %{name}-sd
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/dvd-handler
-%attr(770, %{name}, %{name}) %dir %{_localstatedir}/%{name}
+%attr(770, %{name}, %{name}) %dir %{_localstatedir}/lib/%{name}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/%{name}.8*
 %{_mandir}/man8/btraceback.8*
