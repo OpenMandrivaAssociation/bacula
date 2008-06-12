@@ -1066,10 +1066,14 @@ fi
 %if %{GNOME}
 %post console-gnome
 %post_fix_config gnome-console
+%if %mdkversion < 200900
 %update_menus
+%endif
 		
+%if %mdkversion < 200900
 %postun console-gnome
 %clean_menus
+%endif
 %endif
 
 %if %{WXWINDOWS}
@@ -1080,28 +1084,40 @@ fi
 
 %post console-wx
 %post_fix_config wx-console
+%if %mdkversion < 200900
 %update_menus
+%endif
 		
+%if %mdkversion < 200900
 %postun console-wx
 %clean_menus
+%endif
 %endif
 
 %if %{BAT}
 %post bat
 %post_fix_config bat
+%if %mdkversion < 200900
 %update_menus
+%endif
 		
+%if %mdkversion < 200900
 %postun bat
 %clean_menus
+%endif
 %endif
 
 %if %{TRAY}
 %post tray-monitor
 %post_fix_config tray-monitor
+%if %mdkversion < 200900
 %update_menus
+%endif
 		
+%if %mdkversion < 200900
 %postun tray-monitor
 %clean_menus
+%endif
 %endif
 
 %post -n nagios-check_bacula
