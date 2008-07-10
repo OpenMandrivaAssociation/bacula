@@ -1,4 +1,4 @@
-%define _guiver 2.4.0
+%define _guiver 2.4.1
 
 %define _cur_db_ver 10
 
@@ -44,7 +44,7 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.4.0
+Version:	2.4.1
 Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
