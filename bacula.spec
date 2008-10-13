@@ -1,4 +1,4 @@
-%define _guiver 2.4.2
+%define _guiver 2.4.3
 
 %define _cur_db_ver 10
 
@@ -44,7 +44,7 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.4.2
+Version:	2.4.3
 Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
@@ -64,7 +64,6 @@ Patch7:		bacula-web-mdv_conf.diff
 Patch8:		bacula-gnome2ssl.diff
 Patch9:		bacula-listen.diff
 Patch10:	bacula-cats.diff
-Patch11:	bacula-db.diff
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
@@ -429,7 +428,6 @@ mv %{name}-gui-%{_guiver} gui
 %patch8 -p0 -b .gnome2ssl
 %patch9 -p1 -b .listen
 %patch10 -p0 -b .cats
-%patch11 -p0 -b .db
 %patch12 -p1 -b .wrap
 %patch13 -p0 -b .shared_backend_libs
 %patch14 -p0 -b .qt4_borkiness_fix
