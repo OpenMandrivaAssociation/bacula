@@ -45,7 +45,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	2.4.3
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -468,6 +468,9 @@ autoconf --prepend-include=./autoconf autoconf/configure.in > configure
 chmod 755 configure
 
 %serverbuild
+
+# disable FORTIFY_SOURCE http://www.mail-archive.com/bacula-devel@lists.sourceforge.net/msg01786.html
+export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
 
 %if %{MYSQL}
 %configure --with-mysql \
