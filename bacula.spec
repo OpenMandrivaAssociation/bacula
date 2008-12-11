@@ -90,7 +90,7 @@ BuildRequires: 	python-devel
 BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
-BuildRequires:	ImageMagick
+BuildRequires:	imagemagick
 Buildroot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
