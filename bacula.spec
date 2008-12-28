@@ -69,7 +69,10 @@ Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 Patch16:	bacula-linkage_order.diff
+# Fix string literal errors - AdamW 2008/12
 Patch17:	bacula-2.4.3-literal.patch
+# Just makes configure know python 2.6 exists - AdamW 2008/12
+Patch18:	bacula-2.4.3-python26.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -431,6 +434,7 @@ mv %{name}-gui-%{_guiver} gui
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch16 -p0 -b .bacula-linkage_order
 %patch17 -p1 -b .literal
+%patch18 -p1 -b .python26
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
