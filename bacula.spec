@@ -63,12 +63,13 @@ Patch6:		bacula-manpages.diff
 Patch7:		bacula-web-mdv_conf.diff
 Patch8:		bacula-gnome2ssl.diff
 Patch9:		bacula-listen.diff
-Patch10:	bacula-cats.diff
+Patch10:	bacula-2.4.3-cats.patch
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 Patch16:	bacula-linkage_order.diff
+Patch17:	bacula-2.4.3-literal.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -274,11 +275,7 @@ This is the GNOME GUI interface.
 %package	console-wx
 Summary:	Bacula wxWindows Console
 Group:		Archiving/Backup
-%if %{mdkversion} >= 1020
-BuildRequires:	wxGTK2.6-devel >= 2.6.1
-%else
-BuildRequires:	wxGTK2.4-devel
-%endif
+BuildRequires:	wxgtku-devel
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
@@ -427,12 +424,13 @@ mv %{name}-gui-%{_guiver} gui
 %patch7 -p1
 %patch8 -p0 -b .gnome2ssl
 %patch9 -p1 -b .listen
-%patch10 -p0 -b .cats
+%patch10 -p1 -b .cats
 %patch12 -p1 -b .wrap
 %patch13 -p0 -b .shared_backend_libs
 %patch14 -p0 -b .qt4_borkiness_fix
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch16 -p0 -b .bacula-linkage_order
+%patch17 -p1 -b .literal
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
