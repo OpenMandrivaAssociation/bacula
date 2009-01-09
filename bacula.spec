@@ -1,4 +1,4 @@
-%define _guiver 2.4.3
+%define _guiver 2.4.4
 
 %define _cur_db_ver 10
 
@@ -44,8 +44,8 @@
 
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	2.4.3
-Release:	%mkrel 4
+Version:	2.4.4
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -71,8 +71,6 @@ Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 Patch16:	bacula-linkage_order.diff
 # Fix string literal errors - AdamW 2008/12
 Patch17:	bacula-2.4.3-literal.patch
-# Just makes configure know python 2.6 exists - AdamW 2008/12
-Patch18:	bacula-2.4.3-python26.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -302,7 +300,7 @@ Requires:	usermode, usermode-consoleonly
 
 %description	bat
 %{blurb}
-This is the Bacula Administration Tool package. It is an add-on to 
+This is the Bacula Administration Tool package. It is an add-on to
 the client or server packages.
 %endif
 
@@ -325,7 +323,7 @@ for the file system dependent part of restoring the file attributes and data
 during a recovery operation.
 This program runs as a daemon on the machine to be backed up, and in some of
 the documentation, the File daemon is referred to as the Client (for example in
-Bacula configuration file). 
+Bacula configuration file).
 
 %package	sd
 Summary:	Bacula Storage services
@@ -434,7 +432,6 @@ mv %{name}-gui-%{_guiver} gui
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch16 -p0 -b .bacula-linkage_order
 %patch17 -p1 -b .literal
-%patch18 -p1 -b .python26
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
@@ -489,7 +486,7 @@ popd
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-mysql
 done
-for i in src/cats/*_mysql_*.in; do 
+for i in src/cats/*_mysql_*.in; do
     mv ${i%.in} $i
 done
 %make clean
@@ -504,7 +501,7 @@ done
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-postgresql
 done
-for i in src/cats/*_postgresql*.in; do 
+for i in src/cats/*_postgresql*.in; do
     mv ${i%.in} $i
 done
 %make clean
@@ -519,7 +516,7 @@ done
 for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
     mv $i $i-sqlite3
 done
-for i in src/cats/*_sqlite3*.in; do 
+for i in src/cats/*_sqlite3*.in; do
     mv ${i%.in} $i
 done
 %make clean
@@ -556,10 +553,10 @@ done
 
 %if %{GUI}
 # Now we build the gui
-( 
+(
   cd gui
   %configure --with-bacula="${PWD%/*}"
-  %make 
+  %make
 )
 %endif
 
@@ -583,7 +580,7 @@ for db_type in \
     install -m 755 updatedb/update_${db_type}_tables_?_to_? %{buildroot}%{_libexecdir}/%{name}
     for f in create_${db_type}_database drop_${db_type}_database drop_${db_type}_tables \
 	grant_${db_type}_privileges make_${db_type}_tables update_${db_type}_tables ; do
-    	install -m 755 src/cats/$f %{buildroot}%{_libexecdir}/%{name} 
+    	install -m 755 src/cats/$f %{buildroot}%{_libexecdir}/%{name}
 	ln -snf $f %{buildroot}%{_libexecdir}/%{name}/${f/${db_type}/bacula}
     done
     install -m 755 src/dird/bacula-dir-${db_type} %{buildroot}%{_sbindir}
@@ -752,7 +749,7 @@ EOF
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/%{name}-bat
 ln -s consolehelper %{buildroot}%{_bindir}/%{name}-bat
 
-mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1 
+mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1
 %endif
 
 rm -f %{buildroot}%{_mandir}/man1/bat.1*
@@ -794,7 +791,7 @@ ln -s consolehelper %{buildroot}%{_bindir}/bacula-tray-monitor
 %endif
 
 # Remove some left-over in the compil process to the correct path
-%__rm -f %{buildroot}/%{_libdir}/%{name}/{start,stop}mysql 
+%__rm -f %{buildroot}/%{_libdir}/%{name}/{start,stop}mysql
 %__rm -f %{buildroot}/%{_libdir}/%{name}/gconsole
 
 perl -spi -e 's/"#FAKE#(\w+)#PASSWORD#"/#YOU MUST SET THE $1 PASSWORD#/' %{buildroot}%{_sysconfdir}/%{name}/*.conf
@@ -1072,7 +1069,7 @@ fi
 %if %mdkversion < 200900
 %update_menus
 %endif
-		
+
 %if %mdkversion < 200900
 %postun console-gnome
 %clean_menus
@@ -1090,7 +1087,7 @@ fi
 %if %mdkversion < 200900
 %update_menus
 %endif
-		
+
 %if %mdkversion < 200900
 %postun console-wx
 %clean_menus
@@ -1103,7 +1100,7 @@ fi
 %if %mdkversion < 200900
 %update_menus
 %endif
-		
+
 %if %mdkversion < 200900
 %postun bat
 %clean_menus
@@ -1116,7 +1113,7 @@ fi
 %if %mdkversion < 200900
 %update_menus
 %endif
-		
+
 %if %mdkversion < 200900
 %postun tray-monitor
 %clean_menus
