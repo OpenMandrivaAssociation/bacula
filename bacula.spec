@@ -1,6 +1,14 @@
-%define _guiver 2.4.4
+# required to build 3.0.0 correctly
+# those two are required to build on 2009.1+
+#--%define _disable_ld_no_undefined 1
+#--%define _disable_ld_as_needed 1
+%define _disable_libtoolize 1
 
-%define _cur_db_ver 10
+%define name bacula
+
+%define _guiver 3.0.2
+
+%define _cur_db_ver 11
 
 %define MYSQL 1
 %define PGSQL 1
@@ -11,6 +19,14 @@
 %define TCPW 1
 %define GUI 1
 %define TRAY 1
+
+# directories and paths
+%define sysconf_dir /etc/bacula
+%define script_dir /usr/lib/bacula
+%define working_dir /var/lib/bacula
+%define _bindir /usr/bin
+%define pid_dir /var/run
+%define subsysdir /var/lock/subsys
 
 %{?_with_mysql: %{expand: %%global MYSQL 1}}
 %{?_without_mysql: %{expand: %%global MYSQL 0}}
@@ -40,12 +56,13 @@
 
 # fixes passwords in configuration files
 # removing "SubSys Directory" is needed if upgrading from 1.30a or lower
-%define post_fix_config() umask 0037; if [ -s %{_sysconfdir}/%{name}/.pw.sed ]; then for i in %{_sysconfdir}/%{name}/%{1}.conf %{_sysconfdir}/%{name}/%{1}.conf.rpmnew; do if [ -s $i ]; then sed -f %{_sysconfdir}/%{name}/.pw.sed $i > $i.tmp; sed -e '/SubSys[[:space:]]*Directory/I d' $i.tmp > $i; rm -f $i.tmp; fi; done; fi;
+%define post_fix_config() { umask 0037; if [ -s %{sysconf_dir}/.pw.sed ]; then for i in %{sysconf_dir}/%{1}.conf %{sysconf_dir}/%{1}.conf.rpmnew; do if [ -s $i ]; then sed -f %{sysconf_dir}/.pw.sed $i > $i.tmp; sed -e '/SubSys[[:space:]]*Directory/I d' $i.tmp > $i; rm -f $i.tmp; fi; done; fi; }
 
+#------ Main file
 Summary:	Bacula - The Network Backup Solution
-Name:		bacula
-Version:	2.4.4
-Release:	%mkrel 1
+Name:		%{name}
+Version:	3.0.2
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -55,7 +72,7 @@ Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.g
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
 Patch0:		bacula-config.diff
-Patch1:		nagios-check_bacula.diff
+#Patch1:		nagios-check_bacula.diff
 Patch2:		bacula-pidfile.diff
 Patch3:		bacula-updatedb.diff
 Patch5:		bacula-gui-php_header.diff
@@ -71,6 +88,10 @@ Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 Patch16:	bacula-linkage_order.diff
 # Fix string literal errors - AdamW 2008/12
 Patch17:	bacula-2.4.3-literal.patch
+Patch18:	bacula-backupdir.diff
+Patch19:	bacula-openssl_linkage.patch
+# lsb compliance
+Patch20:	bacula-3.0.1-lsb.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -93,6 +114,7 @@ BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
 BuildRequires:	imagemagick
+BuildRequires:	libtool
 Buildroot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
@@ -104,6 +126,7 @@ it is a network client/server based backup program. Bacula is relatively
 easy to use and efficient, while offering many advanced storage management
 features that make it easy to find and recover lost or damaged files.
 
+#--- common
 %package	common
 Summary:	Common files for bacula package
 Group:		Archiving/Backup
@@ -130,6 +153,7 @@ it is a network client/server based backup program. Bacula is relatively
 easy to use and efficient, while offering many advanced storage management
 features that make it easy to find and recover lost or damaged files.
 
+#------ Directory service
 %package	dir-common
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
@@ -137,6 +161,7 @@ Requires(post): rpm-helper perl-base sed bacula-common = %{epoch}:%{version}-%{r
 Requires(preun): rpm-helper perl-base sed bacula-common = %{epoch}:%{version}-%{release}
 %if %{TCPW}
 Requires:	tcp_wrappers
+Suggests:	mail-server
 %endif
 
 %description	dir-common
@@ -150,10 +175,12 @@ The Catalog services permit the System Administrator or user to quickly locate
 and restore any desired file, since it maintains a record of all Volumes used,
 all Jobs run, and all Files saved.
 
+#--- mysql
 %if %{MYSQL}
 %package	dir-mysql
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
+Requires:	mysql
 Requires:	mysql-client
 BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common
@@ -173,12 +200,14 @@ all Jobs run, and all Files saved.
 This build requires MySQL to be installed separately as the catalog database.
 %endif
 
+#--- pgsql
 %if %{PGSQL}
 %package	dir-pgsql
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires:	postgresql
-BuildRequires:	postgresql-devel
+Requires:	postgresql8.3
+Requires:	postgresql8.3-server
+BuildRequires:	postgresql8.3-devel
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-sqlite bacula-dir-sqlite3
@@ -196,6 +225,7 @@ all Jobs run, and all Files saved.
 This build requires Postgres to be installed separately as the catalog database.
 %endif
 
+#--- sqlite3
 %if %{SQLITE3}
 %package	dir-sqlite3
 Summary:	Bacula Director and Catalog services
@@ -219,6 +249,7 @@ all Jobs run, and all Files saved.
 This build uses an embedded sqlite catalog database.
 %endif
 
+#--- sqlite
 %package	dir-sqlite
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
@@ -242,6 +273,9 @@ and restore any desired file, since it maintains a record of all Volumes used,
 all Jobs run, and all Files saved.
 This build uses an embedded sqlite catalog database.
 
+#------ Console
+
+#--- main console
 %package	console
 Summary:	Bacula Console
 Group:		Archiving/Backup
@@ -256,6 +290,7 @@ Bacula Console is the program that allows the administrator or user to
 communicate with the Bacula Director.
 This is the text only console interface.
 
+#--- console-gnome
 %if %{GNOME}
 %package	console-gnome
 Summary:	Bacula Gnome Console
@@ -272,6 +307,7 @@ communicate with the Bacula Director.
 This is the GNOME GUI interface.
 %endif
 
+#--- console-wx
 %if %{WXWINDOWS}
 %package	console-wx
 Summary:	Bacula wxWindows Console
@@ -288,6 +324,7 @@ communicate with the Bacula Director.
 This is the wxWindows GUI interface.
 %endif
 
+#--- console-bat
 %if %{BAT}
 %package	bat
 Summary:	Bacula Administration Tool
@@ -303,6 +340,8 @@ Requires:	usermode, usermode-consoleonly
 This is the Bacula Administration Tool package. It is an add-on to
 the client or server packages.
 %endif
+
+#------ File services
 
 %package	fd
 Summary:	Bacula File services (Client)
@@ -325,6 +364,7 @@ This program runs as a daemon on the machine to be backed up, and in some of
 the documentation, the File daemon is referred to as the Client (for example in
 Bacula configuration file).
 
+#------ Storage services
 %package	sd
 Summary:	Bacula Storage services
 Group:		Archiving/Backup
@@ -343,6 +383,7 @@ and writing your tapes (or other storage media, e.g. files).
 The Storage services runs as a daemon on the machine that has the backup
 device (usually a tape drive).
 
+#------ WEB gui
 %if %{GUI}
 %package	gui-web
 Summary:	Bacula Web GUI
@@ -369,6 +410,7 @@ Contains the web gui
 You need to install MySQL and php-mysql or PostgreSQL and php-pgsql if you want
 to use either of them as the backend database.
 
+#------ GUI-bimagemgr
 %package	gui-bimagemgr
 Summary:	Bacula Image Manager
 Group:		Archiving/Backup
@@ -390,6 +432,7 @@ features that make it easy to find and recover lost or damaged files.
 Contains the bacula image manager cgi-bin
 %endif
 
+#------ Tray monitor
 %if %{TRAY}
 %package	tray-monitor
 Summary:	Bacula Tray Monitor
@@ -404,12 +447,12 @@ Requires:	usermode, usermode-consoleonly
 The tray monitor for bacula.
 %endif
 
-%package -n	nagios-check_bacula
-Summary:	The check_bacula plugin for nagios
-Group:		Networking/Other
-
-%description -n	nagios-check_bacula
-The check_bacula plugin for nagios.
+#%package -n	nagios-check_bacula
+#Summary:	The check_bacula plugin for nagios
+#Group:		Networking/Other
+#
+#%description -n	nagios-check_bacula
+#The check_bacula plugin for nagios.
 
 %prep
 
@@ -417,21 +460,24 @@ The check_bacula plugin for nagios.
 %setup -q -D -T -a 5
 mv %{name}-gui-%{_guiver} gui
 %patch0 -p1 -b .config
-%patch1 -p0 -b .nagios-check_bacula
+#%patch1 -p1 -b .nagios-check_bacula
 %patch2 -p0 -b .pidfile
 %patch3 -p1 -b .updatedb
 %patch5 -p0 -b .php_header
-%patch6 -p0 -b .manpages
+#--%patch6 -p0 -b .manpages
 %patch7 -p1
 %patch8 -p0 -b .gnome2ssl
 %patch9 -p1 -b .listen
 %patch10 -p1 -b .cats
 %patch12 -p1 -b .wrap
-%patch13 -p0 -b .shared_backend_libs
-%patch14 -p0 -b .qt4_borkiness_fix
+%patch13 -p1 -b .shared_backend_libs
+%patch14 -p1 -b .qt4_borkiness_fix
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
-%patch16 -p0 -b .bacula-linkage_order
+#--%patch16 -p0 -b .bacula-linkage_order
 %patch17 -p1 -b .literal
+%patch18 -p1 -b .backupdir
+%patch19 -p1 -b .openssl_linkage
+%patch20 -p1 -b .lsb
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
@@ -447,24 +493,10 @@ bzcat %{SOURCE7} > bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{_sysconfdir}/%{name} --with-working-dir=/var/lib/%{name} --with-scriptdir=%{_libexecdir}/%{name} --with-subsys-dir=/var/lock/subsys --with-python --with-openssl --with-readline --with-db-name=%{name} --with-db-user=%{name} %{_configure_tcpw}
-
-# temprorary mdv hack because our qt/kde suite is fucked up, still!
-perl -pi -e "s|qmake|/usr/lib/qt4/bin/qmake|g" autoconf/configure.in
-
-pushd src
-    tar -zxf ../examples/nagios/nagios_plugin_check_bacula.tgz
-popd
+%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --with-readline --with-db-name=%{name} --with-db-user=%{name} %{_configure_tcpw} --with-archivedir=/tmp --disable-shared --enable-static
 
 %build
 export QMAKE="/usr/lib/qt4/bin/qmake"
-
-# reconstruct the autofoo stuff
-pushd autoconf
-    aclocal -I bacula-macros -I gettext-macros
-popd
-autoconf --prepend-include=./autoconf autoconf/configure.in > configure
-chmod 755 configure
 
 %serverbuild
 
@@ -478,14 +510,11 @@ export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
 	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
 
-# make the nagios plugin
-pushd src/check_bacula
-%make LIBS="-lpthread -ldl  -lintl -lssl -lcrypto"
-popd
-
-for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-    mv $i $i-mysql
+# we have to do this because of the shared libraries
+for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
+	libtool --silent --mode=install install $z `pwd`/$z-mysql
 done
+
 for i in src/cats/*_mysql_*.in; do
     mv ${i%.in} $i
 done
@@ -498,9 +527,12 @@ done
 	--without-sqlite --without-mysql --without-sqlite3 \
 	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
-for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-    mv $i $i-postgresql
+
+# we have to do this because of the shared libraries
+for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
+	libtool --silent --mode=install install $z `pwd`/$z-postgresql
 done
+
 for i in src/cats/*_postgresql*.in; do
     mv ${i%.in} $i
 done
@@ -513,9 +545,12 @@ done
 	--without-mysql --without-postgresql --without-sqlite \
 	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
 %make
-for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-    mv $i $i-sqlite3
+
+# we have to do this because of the shared libraries
+for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
+	libtool --silent --mode=install install $z `pwd`/$z-sqlite3
 done
+
 for i in src/cats/*_sqlite3*.in; do
     mv ${i%.in} $i
 done
@@ -538,24 +573,26 @@ done
 	--enable-bat \
 	--with-qwt=%{_prefix} \
 %endif
-	--with-dir-password="#FAKE#DIR#PASSWORD#" \
-	--with-fd-password="#FAKE#FD#PASSWORD#" \
-	--with-sd-password="#FAKE#SD#PASSWORD#" \
-	--with-mon-dir-password="#FAKE#MON#DIR#PASSWORD#" \
-  	--with-mon-fd-password="#FAKE#MON#FD#PASSWORD#" \
-	--with-mon-sd-password="#FAKE#MON#SD#PASSWORD#" \
+        --with-dir-password="XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX" \
+        --with-fd-password="XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX" \
+        --with-sd-password="XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX" \
+        --with-mon-dir-password="XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX" \
+        --with-mon-fd-password="XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX" \
+        --with-mon-sd-password="XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX" \
 
 %make
-for i in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-    mv $i $i-sqlite
-    ln -s ${i##*/}-sqlite $i
+
+# we have to do this because of the shared libraries
+for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
+	libtool --silent --mode=install install $z `pwd`/$z-sqlite
 done
 
 %if %{GUI}
 # Now we build the gui
 (
   cd gui
-  %configure --with-bacula="${PWD%/*}"
+  %configure --with-bacula="${PWD%/*}" \
+	%_configure_common
   %make
 )
 %endif
@@ -563,7 +600,7 @@ done
 %install
 rm -rf %{buildroot}
 
-%makeinstall sysconfdir=%{buildroot}%{_sysconfdir}/%{name} scriptdir=%{buildroot}%{_libexecdir}/%{name} working_dir=%{buildroot}/var/lib/%{name}
+%makeinstall sysconfdir=%{buildroot}/%{sysconf_dir} scriptdir=%{buildroot}/%{script_dir} working_dir=%{buildroot}/%{working_dir} docdir=%{buildroot}/%{_docdir}/%{name}
 
 # install the catalog scripts and binaries
 for db_type in \
@@ -577,18 +614,15 @@ for db_type in \
 	sqlite3 \
 %endif
 	sqlite; do
-    install -m 755 updatedb/update_${db_type}_tables_?_to_? %{buildroot}%{_libexecdir}/%{name}
+    install -m 755 updatedb/update_${db_type}_tables_?_to_? %{buildroot}%{script_dir}
     for f in create_${db_type}_database drop_${db_type}_database drop_${db_type}_tables \
 	grant_${db_type}_privileges make_${db_type}_tables update_${db_type}_tables ; do
-    	install -m 755 src/cats/$f %{buildroot}%{_libexecdir}/%{name}
-	ln -snf $f %{buildroot}%{_libexecdir}/%{name}/${f/${db_type}/bacula}
+    	install -m 755 src/cats/$f %{buildroot}%{script_dir}
+	ln -snf $f %{buildroot}%{script_dir}/${f/${db_type}/bacula}
     done
     install -m 755 src/dird/bacula-dir-${db_type} %{buildroot}%{_sbindir}
     install -m 755 src/stored/bscan-${db_type} %{buildroot}%{_sbindir}
     install -m 755 src/tools/dbcheck-${db_type} %{buildroot}%{_sbindir}
-    ln -snf bacula-dir-${db_type} %{buildroot}%{_sbindir}/bacula-dir
-    ln -snf bscan-${db_type} %{buildroot}%{_sbindir}/bscan
-    ln -snf dbcheck-${db_type} %{buildroot}%{_sbindir}/dbcheck
 done
 
 # install the init scripts
@@ -614,7 +648,7 @@ SESSION=true
 EOF
 
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bconsole
-ln -s consolehelper %{buildroot}%{_bindir}/bconsole
+ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bconsole
 
 # install the menu stuff
 %if %{GNOME} || %{WXWINDOWS} || %{BAT}
@@ -665,7 +699,7 @@ PROGRAM=%{_sbindir}/bgnome-console
 SESSION=true
 EOF
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bgnome-console
-ln -s consolehelper %{buildroot}%{_bindir}/bgnome-console
+ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bgnome-console
 %endif
 
 %if %{WXWINDOWS}
@@ -701,15 +735,15 @@ PROGRAM=%{_sbindir}/bwx-console
 SESSION=true
 EOF
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bwx-console
-ln -s consolehelper %{buildroot}%{_bindir}/bwx-console
+ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bwx-console
 # we need to install the program files as well
-#install -m 755 src/wx-console/wx-console %{buildroot}%{_sbindir}
-#cp -p src/console/bconsole.conf %{buildroot}%{_sysconfdir}/%{name}/wx-console.conf
+install -m 755 src/wx-console/bwx-console %{buildroot}%{_sbindir}
+cp -p src/console/bconsole.conf %{buildroot}%{sysconf_dir}/bwx-console.conf
 %endif
 
 %if %{BAT}
 install -m0755 src/qt-console/bat %{buildroot}%{_sbindir}/%{name}-bat
-install -m0644 src/qt-console/bat.conf %{buildroot}%{_sysconfdir}/%{name}/bat.conf
+install -m0644 src/qt-console/bat.conf %{buildroot}%{sysconf_dir}/bat.conf
 
 # make some icons
 convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdir}/%{name}-bat.png
@@ -747,9 +781,7 @@ PROGRAM=%{_sbindir}/%{name}-bat
 SESSION=true
 EOF
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/%{name}-bat
-ln -s consolehelper %{buildroot}%{_bindir}/%{name}-bat
-
-mv %{buildroot}%{_mandir}/man1/bat.1  %{buildroot}%{_mandir}/man1/%{name}-bat.1
+ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/%{name}-bat
 %endif
 
 rm -f %{buildroot}%{_mandir}/man1/bat.1*
@@ -787,16 +819,19 @@ PROGRAM=%{_sbindir}/bacula-tray-monitor
 SESSION=true
 EOF
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bacula-tray-monitor
-ln -s consolehelper %{buildroot}%{_bindir}/bacula-tray-monitor
+ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bacula-tray-monitor
 %endif
 
 # Remove some left-over in the compil process to the correct path
-%__rm -f %{buildroot}/%{_libdir}/%{name}/{start,stop}mysql
-%__rm -f %{buildroot}/%{_libdir}/%{name}/gconsole
+%__rm -f %{buildroot}/%{script_dir}/{start,stop}mysql
+%__rm -f %{buildroot}/%{script_dir}/gconsole
 
-perl -spi -e 's/"#FAKE#(\w+)#PASSWORD#"/#YOU MUST SET THE $1 PASSWORD#/' %{buildroot}%{_sysconfdir}/%{name}/*.conf
-perl -spi -e 's/"#FAKE#MON#(\w+)#PASSWORD#"/#YOU MUST SET THE MONITOR $1 PASSWORD#/' %{buildroot}%{_sysconfdir}/%{name}/*.conf
-touch %{buildroot}%{_sysconfdir}/%{name}/.pw.sed
+# Touch temporary password replacement file
+touch %{buildroot}%{sysconf_dir}/.pw.sed
+
+# Remove unneeded script
+%__rm -f %{buildroot}/%{_sbindir}/bacula
+%__rm -f %{buildroot}/%{script_dir}/bacula
 
 %if %{GUI}
 # install of bimagemgr
@@ -812,27 +847,28 @@ install -d -m 0755 %{buildroot}/var/www/html/bacula
 cp -rf gui/bacula-web %{buildroot}/var/www/html/bacula
 rm -rf %{buildroot}/var/www/html/bacula/external_packages/{smarty,phplot}
 
-install -d -m 0755 %{buildroot}%{_sysconfdir}/bacula/bacula-web
 install -d -m 0755 %{buildroot}/var/cache/httpd/bacula-web
+install -d -m 0755 %{buildroot}%{_sysconfdir}/bacula/bacula-web
 mv %{buildroot}/var/www/html/bacula/bacula-web/configs/bacula.conf %{buildroot}%{_sysconfdir}/bacula/bacula-web/bacula.conf
 rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 %endif
 
-# install the nagios plugin
-install -d %{buildroot}%{_sysconfdir}/nagios/plugins.d
-install -d %{buildroot}%{_libdir}/nagios/plugins
+# Nagios plugin does not works correctly with 3.0.0 yet :(
+## install the nagios plugin
+#install -d %{buildroot}%{_sysconfdir}/nagios/plugins.d
+#install -d %{buildroot}%{_libdir}/nagios/plugins
+#
+#install -m0755 src/check_bacula/check_bacula %{buildroot}%{_libdir}/nagios/plugins/
+#
+#cat > %{buildroot}%{_sysconfdir}/nagios/plugins.d/check_bacula.cfg << EOF
+## 'check_bacula' command definition
+#define command{
+#	command_name	check_bacula
+#	command_line	%{_libdir}/nagios/plugins/check_bacula -H \$HOSTADDRESS$ -D \$ARG1\$ -M \$ARG2\$ -K \$ARG3\$ -P \$ARG4\$
+#	}
+#EOF
 
-install -m0755 src/check_bacula/check_bacula %{buildroot}%{_libdir}/nagios/plugins/
-
-cat > %{buildroot}%{_sysconfdir}/nagios/plugins.d/check_bacula.cfg << EOF
-# 'check_bacula' command definition
-define command{
-	command_name	check_bacula
-	command_line	%{_libdir}/nagios/plugins/check_bacula -H \$HOSTADDRESS$ -D \$ARG1\$ -M \$ARG2\$ -K \$ARG3\$ -P \$ARG4\$
-	}
-EOF
-
-# duh?
+# required for certification
 install -m0755 scripts/btraceback %{buildroot}%{_sbindir}/
 install -m0644 scripts/btraceback.gdb %{buildroot}%{_libdir}/bacula/
 install -m0644 scripts/btraceback.dbx %{buildroot}%{_libdir}/bacula/
@@ -847,32 +883,11 @@ install -m0644 scripts/disk-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
 %_postun_userdel bacula
 
 %pre dir-common
-/usr/bin/perl -e '
-$confdir="%{_sysconfdir}/%{name}";
-$conffile="$confdir/.pw.sed";
-if ( -f "$conffile") {
-	open(IN, "<$conffile") or die "$!";
-	while (<IN>) {
-		/#YOU MUST SET THE (.*) PASSWORD#/ && $already{$1}++;
-	}
-	close(IN);
-}
-mkdir("$confdir");
-umask(0077);
-open(IN, "/dev/random") or die "$!";
-open(OUT, ">>$conffile") or die "$!";
-foreach $c ("DIR","SD","FD","MONITOR DIR","MONITOR SD","MONITOR FD") {
-next if ($already{$c});
-read(IN, $buf, 32);
-my $res = pack("u", $buf);
-$res =~ s/^.//mg;
-$res =~ s/\n//g;
-$res =~ tr|` -_|AA-Za-z0-9+/|;
-	print OUT "s!#YOU MUST SET THE $c PASSWORD#!\"$res\"!\n";
-}
-close (IN);
-close (OUT);
-'
+# generating passwords
+for string in XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX; do
+	pass=`openssl rand -base64 33`
+	echo "s!$string!$pass!g" >> %{sysconf_dir}/.pw.sed
+done
 
 %post dir-common
 %post_fix_config *
@@ -886,7 +901,7 @@ close (OUT);
 umask 077
 for f in create_mysql_database drop_mysql_database drop_mysql_tables \
     grant_mysql_privileges make_mysql_tables update_mysql_tables ; do
-    ln -snf $f %{_libexecdir}/%{name}/${f/mysql/bacula}
+    ln -snf $f %{script_dir}/${f/mysql/bacula}
 done
 ln -snf bacula-dir-mysql %{_sbindir}/bacula-dir
 ln -snf bscan-mysql %{_sbindir}/bscan
@@ -894,14 +909,20 @@ ln -snf dbcheck-mysql %{_sbindir}/dbcheck
 # NOTE: IF THIS FAILS DUE TO MYSQL/PGSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
 DB_VER=`mysql bacula -e 'select * from Version;' | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
-	echo cannot connect to bacula catalog database
-	echo if this is the first bacula installation please check
-	echo and run the following scripts
-	echo 	%{_libexecdir}/%{name}/grant_bacula_privileges
-	echo 	%{_libexecdir}/%{name}/create_bacula_database
-	echo 	%{_libexecdir}/%{name}/make_bacula_tables
+        echo "Hmm, doesn't look like you have an existing database."
+        echo "Granting privileges for MySQL user bacula..."
+	%{script_dir}/grant_mysql_privileges
+        echo "Creating MySQL bacula database..."
+	%{script_dir}/create_mysql_database
+        echo "Creating bacula tables..."
+	%{script_dir}/make_mysql_tables
+	echo if any of the above scripts failed, and is the first bacula installation
+	echo please check and run the following scripts
+	echo 	%{script_dir}/grant_bacula_privileges
+	echo 	%{script_dir}/create_bacula_database
+	echo 	%{script_dir}/make_bacula_tables
 	echo else manually update the database to version %{_cur_db_ver} using the script
-	echo 	%{_libexecdir}/%{name}/update_bacula_tables
+	echo 	%{script_dir}/update_bacula_tables
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
 	mysqldump -f --opt bacula | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
@@ -911,11 +932,11 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	else
 	    for v in `seq 5 $((%{_cur_db_ver} - 1))`; do
 		if [ "$DB_VER" -lt "$v" ]; then
-			%{_libexecdir}/%{name}/update_mysql_tables_$((v - 1))_to_$v
+			%{script_dir}/update_mysql_tables_$((v - 1))_to_$v
 		fi
 	    done
 	fi
-	%{_libexecdir}/%{name}/update_bacula_tables
+	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
 fi
@@ -928,7 +949,7 @@ chmod -R u+rX,go-rwx /var/lib/%{name}
 umask 077
 for f in create_postgresql_database drop_postgresql_database drop_postgresql_tables \
     grant_postgresql_privileges make_postgresql_tables update_postgresql_tables ; do
-    ln -snf $f %{_libexecdir}/%{name}/${f/postgresql/bacula}
+    ln -snf $f %{script_dir}/${f/postgresql/bacula}
 done
 ln -snf bacula-dir-postgresql %{_sbindir}/bacula-dir
 ln -snf bscan-postgresql %{_sbindir}/bscan
@@ -936,14 +957,20 @@ ln -snf dbcheck-postgresql %{_sbindir}/dbcheck
 # NOTE: IF THIS FAILS DUE TO MYSQL/PGSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
 DB_VER=`psql bacula -c 'select * from Version;' | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
-	echo cannot connect to bacula catalog database
-	echo if this is the first bacula installation please check
-	echo and run the following scripts
-	echo 	%{_libexecdir}/%{name}/grant_bacula_privileges
-	echo 	%{_libexecdir}/%{name}/create_bacula_database
-	echo 	%{_libexecdir}/%{name}/make_bacula_tables
+        echo "Hmm, doesn't look like you have an existing database."
+        echo "Creating PostgreSQL bacula database..."
+	su - postgres -c %{script_dir}/create_postgresql_database
+        echo "Creating bacula tables..."
+	su - postgres -c %{script_dir}/make_postgresql_tables
+        echo "Granting privileges for PostgreSQL user bacula..."
+	su - postgres -c %{script_dir}/grant_postgresql_privileges
+	echo if any of the above scripts failed, and is the first bacula installation
+	echo please check and run the following scripts
+	echo 	%{script_dir}/create_bacula_database
+	echo 	%{script_dir}/make_bacula_tables
+	echo 	%{script_dir}/grant_bacula_privileges
 	echo else manually update the database to version %{_cur_db_ver} using the script
-	echo 	%{_libexecdir}/%{name}/update_bacula_tables
+	echo 	%{script_dir}/update_bacula_tables
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
 	pg_dump bacula | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
@@ -953,11 +980,11 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	else
 	    for v in `seq 8 $((%{_cur_db_ver} - 1))`; do
 		if [ "$DB_VER" -lt "$v" ]; then
-			%{_libexecdir}/%{name}/update_postgresql_tables_$((v - 1))_to_$v
+			%{script_dir}/update_postgresql_tables_$((v - 1))_to_$v
 		fi
 	    done
 	fi
-	%{_libexecdir}/%{name}/update_bacula_tables
+	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
 fi
@@ -970,7 +997,7 @@ chmod -R u+rX,go-rwx /var/lib/%{name}
 umask 077
 for f in create_sqlite3_database drop_sqlite3_database drop_sqlite3_tables \
     grant_sqlite3_privileges make_sqlite3_tables update_sqlite3_tables ; do
-    ln -snf $f %{_libexecdir}/%{name}/${f/sqlite3/bacula}
+    ln -snf $f %{script_dir}/${f/sqlite3/bacula}
 done
 ln -snf bacula-dir-sqlite3 %{_sbindir}/bacula-dir
 ln -snf bscan-sqlite3 %{_sbindir}/bscan
@@ -980,9 +1007,9 @@ ln -snf dbcheck-sqlite3 %{_sbindir}/dbcheck
 		sqlite3 /var/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
 # grant privileges and create tables
-	%{_libexecdir}/%{name}/grant_bacula_privileges > dev/null
-	%{_libexecdir}/%{name}/create_bacula_database > dev/null
-	%{_libexecdir}/%{name}/make_bacula_tables > dev/null
+	%{script_dir}/grant_bacula_privileges > dev/null
+	%{script_dir}/create_bacula_database > dev/null
+	%{script_dir}/make_bacula_tables > dev/null
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
 	echo ".dump" | sqlite3 /var/lib/%{name}/bacula.db | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
@@ -992,11 +1019,11 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	else
 	    for v in `seq 9 $((%{_cur_db_ver} - 1))`; do
 		if [ "$DB_VER" -lt "$v" ]; then
-			%{_libexecdir}/%{name}/update_sqlite3_tables_$((v - 1))_to_$v
+			%{script_dir}/update_sqlite3_tables_$((v - 1))_to_$v
 		fi
 	    done
 	fi
-	%{_libexecdir}/%{name}/update_bacula_tables
+	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
 fi
@@ -1008,7 +1035,7 @@ chmod -R u+rX,go-rwx /var/lib/%{name}
 umask 077
 for f in create_sqlite_database drop_sqlite_database drop_sqlite_tables \
     grant_sqlite_privileges make_sqlite_tables update_sqlite_tables ; do
-    ln -snf $f %{_libexecdir}/%{name}/${f/sqlite/bacula}
+    ln -snf $f %{script_dir}/${f/sqlite/bacula}
 done
 ln -snf bacula-dir-sqlite %{_sbindir}/bacula-dir
 ln -snf bscan-sqlite %{_sbindir}/bscan
@@ -1018,9 +1045,9 @@ ln -snf dbcheck-sqlite %{_sbindir}/dbcheck
 		sqlite /var/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
 # grant privileges and create tables
-	%{_libexecdir}/%{name}/grant_bacula_privileges > dev/null
-	%{_libexecdir}/%{name}/create_bacula_database > dev/null
-	%{_libexecdir}/%{name}/make_bacula_tables > dev/null
+	%{script_dir}/grant_bacula_privileges > dev/null
+	%{script_dir}/create_bacula_database > dev/null
+	%{script_dir}/make_bacula_tables > dev/null
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
 	echo ".dump" | sqlite /var/lib/%{name}/bacula.db | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
@@ -1030,11 +1057,11 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	else
 	    for v in `seq 5 $((%{_cur_db_ver} - 1))`; do
 		if [ "$DB_VER" -lt "$v" ]; then
-			%{_libexecdir}/%{name}/update_sqlite_tables_$((v - 1))_to_$v
+			%{script_dir}/update_sqlite_tables_$((v - 1))_to_$v
 		fi
 	    done
 	fi
-	%{_libexecdir}/%{name}/update_bacula_tables
+	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
 fi
@@ -1056,8 +1083,8 @@ chmod -R u+rX,go-rwx /var/lib/%{name}
 %_preun_service bacula-sd
 
 %pre console
-if [ -e %{_sysconfdir}/%{name}/console.conf -a ! -e %{_sysconfdir}/%{name}/bconsole.conf ]; then
-    mv %{_sysconfdir}/%{name}/console.conf %{_sysconfdir}/%{name}/bconsole.conf
+if [ -e %{sysconf_dir}/console.conf -a ! -e %{sysconf_dir}/bconsole.conf ]; then
+    mv %{sysconf_dir}/console.conf %{sysconf_dir}/bconsole.conf
 fi
 
 %post console
@@ -1065,7 +1092,7 @@ fi
 
 %if %{GNOME}
 %post console-gnome
-%post_fix_config gnome-console
+%post_fix_config bgnome-console
 %if %mdkversion < 200900
 %update_menus
 %endif
@@ -1078,12 +1105,12 @@ fi
 
 %if %{WXWINDOWS}
 %pre console-wx
-if [ -e %{_sysconfdir}/%{name}/wx-console.conf -a ! -e %{_sysconfdir}/%{name}/bwx-console.conf ]; then
-    mv %{_sysconfdir}/%{name}/wx-console.conf %{_sysconfdir}/%{name}/bwx-console.conf
+if [ -e %{sysconf_dir}/wx-console.conf -a ! -e %{sysconf_dir}/bwx-console.conf ]; then
+    mv %{sysconf_dir}/wx-console.conf %{sysconf_dir}/bwx-console.conf
 fi
 
 %post console-wx
-%post_fix_config wx-console
+%post_fix_config bwx-console
 %if %mdkversion < 200900
 %update_menus
 %endif
@@ -1120,13 +1147,13 @@ fi
 %endif
 %endif
 
-%post -n nagios-check_bacula
-%{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
-
-%postun -n nagios-check_bacula
-if [ "$1" = "0" ]; then
-    %{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
-fi
+#%post -n nagios-check_bacula
+#%{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
+#
+#%postun -n nagios-check_bacula
+#if [ "$1" = "0" ]; then
+#    %{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
+#fi
 
 %clean
 rm -rf %{buildroot}
@@ -1134,22 +1161,24 @@ rm -rf %{buildroot}
 %files common
 %defattr(0644,root,root,0755)
 %doc LICENSE
-%dir %{_sysconfdir}/%{name}
-%dir %{_sysconfdir}/%{name}/scripts
+%{_docdir}/%{name}
+#%{_docdir}/%{name}/*
+%dir %{sysconf_dir}
+%dir %{script_dir}
 %attr(0755,root,root) %{_sbindir}/btraceback
 %attr(0755,root,root) %{_sbindir}/bsmtp
 %attr(0755,root,root) %{_sbindir}/bregex
 %attr(0755,root,root) %{_sbindir}/bwild
-%dir %{_libexecdir}/%{name}
 %{_libexecdir}/%{name}/btraceback.gdb
 %{_libexecdir}/%{name}/btraceback.dbx
-# i think this should go into %{name}-sd
-%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/dvd-handler
 %attr(770, %{name}, %{name}) %dir /var/lib/%{name}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/%{name}.8*
 %{_mandir}/man8/btraceback.8*
-%exclude %{_libexecdir}/%{name}/%{name}
+# we do not need those devel libraries, as the change for each
+# database
+%exclude %{_libdir}/*a
+%exclude %{_libdir}/*la
 %if ! %{GNOME}
 %exclude %{_mandir}/man1/%{name}-console-gnome.1*
 %endif
@@ -1160,7 +1189,7 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/%{name}-wxconsole.1*
 %endif
 %if %{BAT}
-%exclude %{_mandir}/man1/%{name}-bat.1*
+#%exclude %{_mandir}/man1/%{name}-bat.1*
 %endif
 
 %files dir-common
@@ -1168,8 +1197,7 @@ rm -rf %{buildroot}
 %doc ChangeLog CheckList ReleaseNotes kernstodo LICENSE
 # FIXME : Merge baculs-docs and use it
 #%doc doc/*.pdf doc/manual examples
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-dir.conf
-%ghost %{_sysconfdir}/%{name}/.pw.sed
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/%{name}-dir.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}-dir
 %{_mandir}/man8/%{name}-dir.8*
 %{_mandir}/man8/dbcheck.8*
@@ -1179,39 +1207,40 @@ rm -rf %{buildroot}
 %ghost %{_sbindir}/%{name}-dir
 %ghost %{_sbindir}/dbcheck
 %ghost %{_sbindir}/bscan
-%ghost %{_libexecdir}/%{name}/create_%{name}_database
-%ghost %{_libexecdir}/%{name}/drop_%{name}_database
-%ghost %{_libexecdir}/%{name}/drop_%{name}_tables
-%ghost %{_libexecdir}/%{name}/grant_%{name}_privileges
-%ghost %{_libexecdir}/%{name}/make_%{name}_tables
-%ghost %{_libexecdir}/%{name}/update_%{name}_tables
+%ghost %{script_dir}/create_%{name}_database
+%ghost %{script_dir}/drop_%{name}_database
+%ghost %{script_dir}/drop_%{name}_tables
+%ghost %{script_dir}/grant_%{name}_privileges
+%ghost %{script_dir}/make_%{name}_tables
+%ghost %{script_dir}/update_%{name}_tables
+%attr(0600,root,root) %ghost %{sysconf_dir}/.pw.sed
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/make_catalog_backup
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/delete_catalog_backup
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/query.sql
-%exclude %{_libexecdir}/%{name}/%{name}-ctl-dir
+%exclude %{script_dir}/%{name}-ctl-dir
 
 %files dir-sqlite
 %{_sbindir}/%{name}-dir-sqlite
 %{_sbindir}/dbcheck-sqlite
 %{_sbindir}/bscan-sqlite
-%{_libexecdir}/%{name}/create_sqlite_database
-%{_libexecdir}/%{name}/drop_sqlite_database
-%{_libexecdir}/%{name}/drop_sqlite_tables
-%{_libexecdir}/%{name}/grant_sqlite_privileges
-%{_libexecdir}/%{name}/make_sqlite_tables
-%{_libexecdir}/%{name}/update_sqlite_tables*
+%{script_dir}/create_sqlite_database
+%{script_dir}/drop_sqlite_database
+%{script_dir}/drop_sqlite_tables
+%{script_dir}/grant_sqlite_privileges
+%{script_dir}/make_sqlite_tables
+%{script_dir}/update_sqlite_tables*
 
 %if %{MYSQL}
 %files dir-mysql
 %{_sbindir}/%{name}-dir-mysql
 %{_sbindir}/dbcheck-mysql
 %{_sbindir}/bscan-mysql
-%{_libexecdir}/%{name}/create_mysql_database
-%{_libexecdir}/%{name}/drop_mysql_database
-%{_libexecdir}/%{name}/drop_mysql_tables
-%{_libexecdir}/%{name}/grant_mysql_privileges
-%{_libexecdir}/%{name}/make_mysql_tables
-%{_libexecdir}/%{name}/update_mysql_tables*
+%{script_dir}/create_mysql_database
+%{script_dir}/drop_mysql_database
+%{script_dir}/drop_mysql_tables
+%{script_dir}/grant_mysql_privileges
+%{script_dir}/make_mysql_tables
+%{script_dir}/update_mysql_tables*
 %endif
 
 %if %{PGSQL}
@@ -1219,12 +1248,12 @@ rm -rf %{buildroot}
 %{_sbindir}/%{name}-dir-postgresql
 %{_sbindir}/dbcheck-postgresql
 %{_sbindir}/bscan-postgresql
-%{_libexecdir}/%{name}/create_postgresql_database
-%{_libexecdir}/%{name}/drop_postgresql_database
-%{_libexecdir}/%{name}/drop_postgresql_tables
-%{_libexecdir}/%{name}/grant_postgresql_privileges
-%{_libexecdir}/%{name}/make_postgresql_tables
-%{_libexecdir}/%{name}/update_postgresql_tables*
+%{script_dir}/create_postgresql_database
+%{script_dir}/drop_postgresql_database
+%{script_dir}/drop_postgresql_tables
+%{script_dir}/grant_postgresql_privileges
+%{script_dir}/make_postgresql_tables
+%{script_dir}/update_postgresql_tables*
 %endif
 
 %if %{SQLITE3}
@@ -1232,61 +1261,63 @@ rm -rf %{buildroot}
 %{_sbindir}/%{name}-dir-sqlite3
 %{_sbindir}/dbcheck-sqlite3
 %{_sbindir}/bscan-sqlite3
-%{_libexecdir}/%{name}/create_sqlite3_database
-%{_libexecdir}/%{name}/drop_sqlite3_database
-%{_libexecdir}/%{name}/drop_sqlite3_tables
-%{_libexecdir}/%{name}/grant_sqlite3_privileges
-%{_libexecdir}/%{name}/make_sqlite3_tables
-%{_libexecdir}/%{name}/update_sqlite3_tables*
+%{script_dir}/create_sqlite3_database
+%{script_dir}/drop_sqlite3_database
+%{script_dir}/drop_sqlite3_tables
+%{script_dir}/grant_sqlite3_privileges
+%{script_dir}/make_sqlite3_tables
+%{script_dir}/update_sqlite3_tables*
 %endif
 
 %files fd
 %defattr(0755,root,root)
 %doc LICENSE
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-fd.conf
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/%{name}-fd.conf
 %attr(0755,root,root) %{_initrddir}/%{name}-fd
 %{_sbindir}/%{name}-fd
 %attr(0644,root,root) %{_mandir}/man8/%{name}-fd.8*
-%exclude %{_libexecdir}/%{name}/%{name}-ctl-fd
+%exclude %{script_dir}/%{name}-ctl-fd
 
 %files sd
 %defattr(0755,root,root)
 %doc LICENSE
 %attr(0755,root,root) %{_initrddir}/%{name}-sd
-%dir %{_sysconfdir}/%{name}
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-sd.conf
+%dir %{sysconf_dir}
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/%{name}-sd.conf
 %{_sbindir}/%{name}-sd
 %{_sbindir}/bcopy
 %{_sbindir}/bextract
 %{_sbindir}/bls
 %{_sbindir}/btape
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/mtx-changer
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/mtx-changer.conf
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/disk-changer
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/dvd-handler
 %defattr(0644,root,root,0755)
 %{_mandir}/man8/%{name}-sd.8*
 %{_mandir}/man8/bcopy.8*
 %{_mandir}/man8/bextract.8*
 %{_mandir}/man8/bls.8*
 %{_mandir}/man8/btape.8*
-%exclude %{_libexecdir}/%{name}/%{name}-ctl-sd
+%exclude %{script_dir}/%{name}-ctl-sd
 
 %files console
 %defattr(0644,root,root,0755)
 %doc LICENSE
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bconsole.conf
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bconsole.conf
 %config(noreplace) %{_sysconfdir}/security/console.apps/bconsole
 %config(noreplace) %{_sysconfdir}/pam.d/bconsole
 %attr(0755,root,root) %{_sbindir}/bconsole
 %verify(link) %{_bindir}/bconsole
 %{_mandir}/man8/bconsole.8*
-%attr(0755,root,root) %{_libdir}/%{name}/bconsole
-%exclude %{_libexecdir}/%{name}/bconsole
+%attr(0755,root,root) %{script_dir}/bconsole
+%exclude %{script_dir}/bconsole
 
 %if %{GNOME}
 %files console-gnome
 %defattr(0644,root,root,0755)
 %doc LICENSE
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bgnome-console.conf
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bgnome-console.conf
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bgnome-console
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bgnome-console
 %attr(0755,root,root) %{_sbindir}/bgnome-console
@@ -1305,7 +1336,7 @@ rm -rf %{buildroot}
 %files console-wx
 %defattr(0644,root,root,0755)
 %doc LICENSE
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bwx-console.conf
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bwx-console.conf
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bwx-console
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
 %attr(0755,root,root) %{_sbindir}/bwx-console
@@ -1323,7 +1354,7 @@ rm -rf %{buildroot}
 %if %{BAT}
 %files bat
 %defattr(0644,root,root,0755)
-%attr(0600,root,root) %config(noreplace) %{_sysconfdir}/%{name}/bat.conf
+%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bat.conf
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/%{name}-bat
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}-bat
 %attr(0755,root,root) %{_sbindir}/%{name}-bat
@@ -1335,13 +1366,13 @@ rm -rf %{buildroot}
 %{_miconsdir}/%{name}-bat.png
 %{_liconsdir}/%{name}-bat.png
 %{_datadir}/applications/mandriva-%{name}-bat.desktop
-%{_mandir}/man1/%{name}-bat.1*
+#%{_mandir}/man1/%{name}-bat.1*
 %endif
 
 %if %{GUI}
 %files gui-web
+%dir %attr(0755,apache,apache) /var/www/html/%{name}/
 /var/www/html/%{name}/*
-%dir %attr(0755,apache,apache) %{_sysconfdir}/%{name}/%{name}-web
 %attr(0640,apache,apache) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-web/%{name}.conf
 %dir %attr(0755,apache,apache) /var/cache/httpd/%{name}-web
 
@@ -1356,10 +1387,10 @@ rm -rf %{buildroot}
 %files tray-monitor
 %defattr(0644,root,root,0755)
 %doc LICENSE
-%config(noreplace) %{_sysconfdir}/%{name}/tray-monitor.conf
+%config(noreplace) %{sysconf_dir}/tray-monitor.conf
 %config(noreplace) %{_sysconfdir}/security/console.apps/%{name}-tray-monitor
 %config(noreplace) %{_sysconfdir}/pam.d/%{name}-tray-monitor
-%{_sbindir}/%{name}-tray-monitor
+%attr(0755,root,root) %{_sbindir}/%{name}-tray-monitor
 %verify(link) %{_bindir}/%{name}-tray-monitor
 %if %{mdkversion} <= 200700
 %{_menudir}/%{name}-tray-monitor
@@ -1370,8 +1401,3 @@ rm -rf %{buildroot}
 %{_datadir}/applications/mandriva-%{name}-tray-monitor.desktop
 %{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
-
-%files -n nagios-check_bacula
-%defattr(-,root,root)
-%attr(0644,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/nagios/plugins.d/check_bacula.cfg
-%{_libdir}/nagios/plugins/check_bacula
