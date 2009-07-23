@@ -62,7 +62,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	3.0.2
-Release:	%mkrel 3
+Release:	%mkrel 4
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -869,7 +869,6 @@ rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 #EOF
 
 # required for certification
-mkdir %{buildroot}%{_libdir}/bacula/
 install -m0755 scripts/btraceback %{buildroot}%{_sbindir}/
 install -m0644 scripts/btraceback.gdb %{buildroot}%{_libdir}/bacula/
 install -m0644 scripts/btraceback.dbx %{buildroot}%{_libdir}/bacula/
