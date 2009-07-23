@@ -22,7 +22,7 @@
 
 # directories and paths
 %define sysconf_dir /etc/bacula
-%define script_dir /usr/lib/bacula
+%define script_dir %{_libdir}/bacula
 %define working_dir /var/lib/bacula
 %define _bindir /usr/bin
 %define pid_dir /var/run
@@ -62,7 +62,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	3.0.2
-Release:	%mkrel 2
+Release:	%mkrel 3
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL
@@ -259,7 +259,7 @@ Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite3
 # this might allow urpmi to upgrade correctly
-Obsoletes:	bacula-dir
+Obsoletes:	bacula-dir < %{version}
 
 %description	dir-sqlite
 %{blurb}
@@ -869,6 +869,7 @@ rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 #EOF
 
 # required for certification
+mkdir %{buildroot}%{_libdir}/bacula/
 install -m0755 scripts/btraceback %{buildroot}%{_sbindir}/
 install -m0644 scripts/btraceback.gdb %{buildroot}%{_libdir}/bacula/
 install -m0644 scripts/btraceback.dbx %{buildroot}%{_libdir}/bacula/
