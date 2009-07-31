@@ -62,7 +62,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	3.0.2
-Release:	%mkrel 4
+Release:	%mkrel 5
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -493,7 +493,7 @@ bzcat %{SOURCE7} > bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --with-readline --with-db-name=%{name} --with-db-user=%{name} %{_configure_tcpw} --with-archivedir=/tmp --disable-shared --enable-static
+%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --with-readline --with-db-name=%{name} --with-db-user=%{name} %{_configure_tcpw} --with-archivedir=/tmp --disable-shared --enable-static --with-hostname=localhost --with-basename=localhost
 
 %build
 export QMAKE="/usr/lib/qt4/bin/qmake"
