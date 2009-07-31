@@ -65,7 +65,7 @@ Version:	3.0.2
 Release:	%mkrel 4
 Epoch:		1
 Group:		Archiving/Backup
-License:	GPL
+License:	GPL v2
 URL:		http://www.bacula.org/
 Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.gz
