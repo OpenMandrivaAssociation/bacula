@@ -6,7 +6,7 @@
 
 %define name bacula
 
-%define _guiver 3.0.2
+%define _guiver 3.0.3
 
 %define _cur_db_ver 11
 
@@ -62,7 +62,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	3.0.2
-Release:	%mkrel 5
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
