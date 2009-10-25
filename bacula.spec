@@ -61,7 +61,7 @@
 #------ Main file
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
-Version:	3.0.2
+Version:	3.0.3
 Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
