@@ -62,7 +62,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	3.0.3
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -883,10 +883,21 @@ install -m0644 scripts/disk-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
 %_postun_userdel bacula
 
 %pre dir-common
+# pre-2010.0 .pw.sed file used a different syntax which was changed with MES5-based .spec
+# this will ensure correct upgrade for old distro versions
+if [ -e %{sysconf_dir}/.pw.sed ]; then
+        sed -i -e "s/#YOU MUST SET THE DIR PASSWORD#/XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX/g" \
+            -e "s/#YOU MUST SET THE FD PASSWORD#/XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX/g" \
+            -e "s/#YOU MUST SET THE SD PASSWORD#/XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX/g" \
+            -e "s/#YOU MUST SET THE MONITOR DIR PASSWORD#/XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX/g" \
+            -e "s/#YOU MUST SET THE MONITOR FD PASSWORD#/XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX/g" \
+            -e "s/#YOU MUST SET THE MONITOR SD PASSWORD#/XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX/g" \
+            %{sysconf_dir}/.pw.sed
+fi
 # generating passwords
 for string in XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX; do
 	pass=`openssl rand -base64 33`
-	echo "s!$string!$pass!g" >> %{sysconf_dir}/.pw.sed
+	grep -q "$STRING" %{sysconf_dir}/.pw.sed || echo "s!$string!$pass!g" >> %{sysconf_dir}/.pw.sed
 done
 
 %post dir-common
