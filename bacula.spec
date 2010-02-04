@@ -62,7 +62,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	3.0.3
-Release:	%mkrel 2
+Release:	%mkrel 3
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -391,7 +391,9 @@ Group:		Archiving/Backup
 Requires(post): rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun):rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
 Requires:	webserver
+Requires:	apache-mod_php
 Requires:	php-pear
+Requires:	php-pear-DB
 Requires:	php-gd
 Requires:	phplot
 Requires:	php-smarty
