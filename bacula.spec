@@ -6,14 +6,15 @@
 
 %define name bacula
 
-%define _guiver 3.0.3
+%define _guiver 5.0.1
 
-%define _cur_db_ver 11
+%define _cur_db_ver 12
 
+# (eugeni) starting with 5.0.0, bacula dropped sqlite2 support
+# in order to be able to compile everything in one run, sqlite3 support
+# became mandatory now
 %define MYSQL 1
 %define PGSQL 1
-%define SQLITE3 1
-%define GNOME 1
 %define WXWINDOWS 1
 %define BAT 1
 %define TCPW 1
@@ -32,10 +33,6 @@
 %{?_without_mysql: %{expand: %%global MYSQL 0}}
 %{?_with_pgsql: %{expand: %%global PGSQL 1}}
 %{?_without_pgsql: %{expand: %%global PGSQL 0}}
-%{?_with_sqlite3: %{expand: %%global SQLITE3 1}}
-%{?_without_sqlite3: %{expand: %%global SQLITE3 0}}
-%{?_with_gnome: %{expand: %%global GNOME 1}}
-%{?_without_gnome: %{expand: %%global GNOME 0}}
 %{?_with_wx: %{expand: %%global WXWINDOWS 1}}
 %{?_without_wx: %{expand: %%global WXWINDOWS 0}}
 %{?_with_bat: %{expand: %%global BAT 1}}
@@ -61,8 +58,8 @@
 #------ Main file
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
-Version:	3.0.3
-Release:	%mkrel 4
+Version:	5.0.1
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -71,27 +68,24 @@ Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.gz
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
-Patch0:		bacula-config.diff
-#Patch1:		nagios-check_bacula.diff
 Patch2:		bacula-pidfile.diff
 Patch3:		bacula-updatedb.diff
 Patch5:		bacula-gui-php_header.diff
-Patch6:		bacula-manpages.diff
 Patch7:		bacula-web-mdv_conf.diff
-Patch8:		bacula-gnome2ssl.diff
 Patch9:		bacula-listen.diff
 Patch10:	bacula-2.4.3-cats.patch
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-qt4_borkiness_fix.diff
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
-Patch16:	bacula-linkage_order.diff
 # Fix string literal errors - AdamW 2008/12
-Patch17:	bacula-2.4.3-literal.patch
+Patch17:	bacula-5.0.1-literal.patch
 Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
 # lsb compliance
 Patch20:	bacula-3.0.1-lsb.patch
+# bacula 5.0.1 does not has bacula.spec.in
+Patch21:	bacula-5.0.1-nospec.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -135,12 +129,10 @@ Requires(preun): rpm-helper
 Conflicts:	bacula-dir-common < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-pgsql < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-sqlite < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-sqlite3 < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-fd < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-sd < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-console < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-console-gnome < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-console-wx < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-tray-monitor < %{epoch}:%{version}-%{release}
 
@@ -185,7 +177,7 @@ Requires:	mysql-client
 BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-pgsql bacula-dir-sqlite bacula-dir-sqlite3
+Conflicts:	bacula-dir-pgsql bacula-dir-sqlite3
 
 %description	dir-mysql
 %{blurb}
@@ -210,7 +202,7 @@ Requires:	postgresql8.3-server
 BuildRequires:	postgresql8.3-devel
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-mysql bacula-dir-sqlite bacula-dir-sqlite3
+Conflicts:	bacula-dir-mysql bacula-dir-sqlite3
 
 %description	dir-pgsql
 %{blurb}
@@ -226,7 +218,6 @@ This build requires Postgres to be installed separately as the catalog database.
 %endif
 
 #--- sqlite3
-%if %{SQLITE3}
 %package	dir-sqlite3
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
@@ -237,31 +228,6 @@ Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite
 
 %description	dir-sqlite3
-%{blurb}
-Bacula Director is the program that supervises all the backup, restore, verify
-and archive operations. The system administrator uses the Bacula Director to
-schedule backups and to recover files.
-Catalog services are comprised of the software programs responsible for
-maintaining the file indexes and volume databases for all files backed up.
-The Catalog services permit the System Administrator or user to quickly locate
-and restore any desired file, since it maintains a record of all Volumes used,
-all Jobs run, and all Files saved.
-This build uses an embedded sqlite catalog database.
-%endif
-
-#--- sqlite
-%package	dir-sqlite
-Summary:	Bacula Director and Catalog services
-Group:		Archiving/Backup
-Requires:	sqlite-tools
-BuildRequires:	sqlite-devel
-Requires:	bacula-dir-common
-Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite3
-# this might allow urpmi to upgrade correctly
-Obsoletes:	bacula-dir < %{version}
-
-%description	dir-sqlite
 %{blurb}
 Bacula Director is the program that supervises all the backup, restore, verify
 and archive operations. The system administrator uses the Bacula Director to
@@ -289,23 +255,6 @@ Requires:	usermode-consoleonly
 Bacula Console is the program that allows the administrator or user to
 communicate with the Bacula Director.
 This is the text only console interface.
-
-#--- console-gnome
-%if %{GNOME}
-%package	console-gnome
-Summary:	Bacula Gnome Console
-Group:		Archiving/Backup
-BuildRequires: libgnomeui2-devel
-Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
-Requires:	usermode, usermode-consoleonly
-
-%description	console-gnome
-%{blurb}
-Bacula Console is the program that allows the administrator or user to
-communicate with the Bacula Director.
-This is the GNOME GUI interface.
-%endif
 
 #--- console-wx
 %if %{WXWINDOWS}
@@ -461,25 +410,22 @@ The tray monitor for bacula.
 %setup -q
 %setup -q -D -T -a 5
 mv %{name}-gui-%{_guiver} gui
-%patch0 -p1 -b .config
-#%patch1 -p1 -b .nagios-check_bacula
 %patch2 -p0 -b .pidfile
 %patch3 -p1 -b .updatedb
 %patch5 -p0 -b .php_header
 #--%patch6 -p0 -b .manpages
 %patch7 -p1
-%patch8 -p0 -b .gnome2ssl
 %patch9 -p1 -b .listen
 %patch10 -p1 -b .cats
 %patch12 -p1 -b .wrap
 %patch13 -p1 -b .shared_backend_libs
 %patch14 -p1 -b .qt4_borkiness_fix
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
-#--%patch16 -p0 -b .bacula-linkage_order
 %patch17 -p1 -b .literal
 %patch18 -p1 -b .backupdir
 %patch19 -p1 -b .openssl_linkage
 %patch20 -p1 -b .lsb
+%patch21 -p1 -b .nospec
 
 perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
 
@@ -508,8 +454,8 @@ export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
 %if %{MYSQL}
 %configure --with-mysql \
 	%_configure_common \
-	--without-sqlite --without-postgresql --without-sqlite3 \
-	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
+	--without-postgresql --without-sqlite3 \
+	--disable-bwx-console --disable-bat --disable-tray-monitor
 %make
 
 # we have to do this because of the shared libraries
@@ -526,8 +472,8 @@ done
 %if %{PGSQL}
 %configure --with-postgresql \
 	%_configure_common \
-	--without-sqlite --without-mysql --without-sqlite3 \
-	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
+	--without-mysql --without-sqlite3 \
+	--disable-bwx-console --disable-bat --disable-tray-monitor
 %make
 
 # we have to do this because of the shared libraries
@@ -541,30 +487,11 @@ done
 %make clean
 %endif
 
-%if %{SQLITE3}
+# now build sqlite3 and the rest of GUI tools
+
 %configure --with-sqlite3 \
 	%_configure_common \
-	--without-mysql --without-postgresql --without-sqlite \
-	--disable-gnome --disable-bwx-console --disable-bat --disable-tray-monitor
-%make
-
-# we have to do this because of the shared libraries
-for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-	libtool --silent --mode=install install $z `pwd`/$z-sqlite3
-done
-
-for i in src/cats/*_sqlite3*.in; do
-    mv ${i%.in} $i
-done
-%make clean
-%endif
-
-%configure --with-sqlite \
-	%_configure_common \
-	--without-mysql --without-postgresql --without-sqlite3 \
-%if %{GNOME}
-	--enable-gnome \
-%endif
+	--without-mysql --without-postgresql \
 %if %{WXWINDOWS}
 	--enable-bwx-console \
 %endif
@@ -586,7 +513,7 @@ done
 
 # we have to do this because of the shared libraries
 for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-	libtool --silent --mode=install install $z `pwd`/$z-sqlite
+	libtool --silent --mode=install install $z `pwd`/$z-sqlite3
 done
 
 %if %{GUI}
@@ -612,10 +539,7 @@ for db_type in \
 %if %{PGSQL}
 	postgresql \
 %endif
-%if %{SQLITE3}
-	sqlite3 \
-%endif
-	sqlite; do
+	sqlite3; do
     install -m 755 updatedb/update_${db_type}_tables_?_to_? %{buildroot}%{script_dir}
     for f in create_${db_type}_database drop_${db_type}_database drop_${db_type}_tables \
 	grant_${db_type}_privileges make_${db_type}_tables update_${db_type}_tables ; do
@@ -626,6 +550,9 @@ for db_type in \
     install -m 755 src/stored/bscan-${db_type} %{buildroot}%{_sbindir}
     install -m 755 src/tools/dbcheck-${db_type} %{buildroot}%{_sbindir}
 done
+
+# remove dbcheck left from sqlite3 build
+rm -f %{buildroot}%{_sbindir}/dbcheck
 
 # install the init scripts
 install -d %{buildroot}%{_initrddir}
@@ -653,7 +580,7 @@ install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bconsole
 ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bconsole
 
 # install the menu stuff
-%if %{GNOME} || %{WXWINDOWS} || %{BAT}
+%if %{WXWINDOWS} || %{BAT}
 
 %if %mdkversion <= 200700
 install -d %{buildroot}%{_menudir}
@@ -666,42 +593,6 @@ install -d %{buildroot}%{_liconsdir}
 convert scripts/bacula.png -resize 16x16 %{buildroot}%{_miconsdir}/%{name}.png
 convert scripts/bacula.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}.png
 convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}.png
-%endif
-
-%if %{GNOME}
-
-%if %mdkversion <= 200700
-cat << EOF > %{buildroot}%{_menudir}/%{name}-console-gnome
-?package(%{name}-console-gnome): \
-command="%{_bindir}/bgnome-console" \
-icon="%{name}.png" \
-needs="x11" \
-title="Bacula Console (gnome)" \
-longtitle="Bacula Director Console" \
-section="System/Archiving/Backup"
-EOF
-%endif
-
-# XDG menu
-install -d %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}-console-gnome.desktop << EOF
-[Desktop Entry]
-Name=Bacula Console (gnome)
-Comment=Bacula Director Console
-Exec=%{_bindir}/bgnome-console
-Icon=%{name}
-Terminal=false
-Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
-EOF
-
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bgnome-console
-USER=root
-PROGRAM=%{_sbindir}/bgnome-console
-SESSION=true
-EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bgnome-console
-ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bgnome-console
 %endif
 
 %if %{WXWINDOWS}
@@ -1005,7 +896,6 @@ chown -R bacula:bacula /var/lib/%{name}
 chmod -R u+rX,go-rwx /var/lib/%{name}
 %endif
 
-%if %{SQLITE3}
 %post dir-sqlite3
 umask 077
 for f in create_sqlite3_database drop_sqlite3_database drop_sqlite3_tables \
@@ -1042,44 +932,6 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 fi
 chown -R bacula:bacula /var/lib/%{name}
 chmod -R u+rX,go-rwx /var/lib/%{name}
-%endif
-
-%post dir-sqlite
-umask 077
-for f in create_sqlite_database drop_sqlite_database drop_sqlite_tables \
-    grant_sqlite_privileges make_sqlite_tables update_sqlite_tables ; do
-    ln -snf $f %{script_dir}/${f/sqlite/bacula}
-done
-ln -snf bacula-dir-sqlite %{_sbindir}/bacula-dir
-ln -snf bscan-sqlite %{_sbindir}/bscan
-ln -snf dbcheck-sqlite %{_sbindir}/dbcheck
-[ -s /var/lib/%{name}/bacula.db ] && \
-	DB_VER=`echo "select * from Version;" | \
-		sqlite /var/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
-if [ -z "$DB_VER" ]; then
-# grant privileges and create tables
-	%{script_dir}/grant_bacula_privileges > dev/null
-	%{script_dir}/create_bacula_database > dev/null
-	%{script_dir}/make_bacula_tables > dev/null
-elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
-	echo "Backing up bacula tables"
-	echo ".dump" | sqlite /var/lib/%{name}/bacula.db | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
-	echo "Upgrading bacula tables"
-	if [ "$DB_VER" -lt "4" ]; then
-		echo "your bacula database version is too old to be upgraded automatically"
-	else
-	    for v in `seq 5 $((%{_cur_db_ver} - 1))`; do
-		if [ "$DB_VER" -lt "$v" ]; then
-			%{script_dir}/update_sqlite_tables_$((v - 1))_to_$v
-		fi
-	    done
-	fi
-	%{script_dir}/update_bacula_tables
-
-	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
-fi
-chown -R bacula:bacula /var/lib/%{name}
-chmod -R u+rX,go-rwx /var/lib/%{name}
 
 %post fd
 %post_fix_config bacula-fd
@@ -1102,19 +954,6 @@ fi
 
 %post console
 %post_fix_config bconsole
-
-%if %{GNOME}
-%post console-gnome
-%post_fix_config bgnome-console
-%if %mdkversion < 200900
-%update_menus
-%endif
-
-%if %mdkversion < 200900
-%postun console-gnome
-%clean_menus
-%endif
-%endif
 
 %if %{WXWINDOWS}
 %pre console-wx
@@ -1192,9 +1031,6 @@ rm -rf %{buildroot}
 # database
 %exclude %{_libdir}/*a
 %exclude %{_libdir}/*la
-%if ! %{GNOME}
-%exclude %{_mandir}/man1/%{name}-console-gnome.1*
-%endif
 %if ! %{TRAY}
 %exclude %{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
@@ -1218,7 +1054,6 @@ rm -rf %{buildroot}
 %defattr (0755,root,root)
 %attr(0755,root,root) %{_initrddir}/%{name}-dir
 %ghost %{_sbindir}/%{name}-dir
-%ghost %{_sbindir}/dbcheck
 %ghost %{_sbindir}/bscan
 %ghost %{script_dir}/create_%{name}_database
 %ghost %{script_dir}/drop_%{name}_database
@@ -1231,17 +1066,6 @@ rm -rf %{buildroot}
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/delete_catalog_backup
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/query.sql
 %exclude %{script_dir}/%{name}-ctl-dir
-
-%files dir-sqlite
-%{_sbindir}/%{name}-dir-sqlite
-%{_sbindir}/dbcheck-sqlite
-%{_sbindir}/bscan-sqlite
-%{script_dir}/create_sqlite_database
-%{script_dir}/drop_sqlite_database
-%{script_dir}/drop_sqlite_tables
-%{script_dir}/grant_sqlite_privileges
-%{script_dir}/make_sqlite_tables
-%{script_dir}/update_sqlite_tables*
 
 %if %{MYSQL}
 %files dir-mysql
@@ -1269,7 +1093,6 @@ rm -rf %{buildroot}
 %{script_dir}/update_postgresql_tables*
 %endif
 
-%if %{SQLITE3}
 %files dir-sqlite3
 %{_sbindir}/%{name}-dir-sqlite3
 %{_sbindir}/dbcheck-sqlite3
@@ -1280,7 +1103,6 @@ rm -rf %{buildroot}
 %{script_dir}/grant_sqlite3_privileges
 %{script_dir}/make_sqlite3_tables
 %{script_dir}/update_sqlite3_tables*
-%endif
 
 %files fd
 %defattr(0755,root,root)
@@ -1325,25 +1147,6 @@ rm -rf %{buildroot}
 %{_mandir}/man8/bconsole.8*
 %attr(0755,root,root) %{script_dir}/bconsole
 %exclude %{script_dir}/bconsole
-
-%if %{GNOME}
-%files console-gnome
-%defattr(0644,root,root,0755)
-%doc LICENSE
-%attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bgnome-console.conf
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bgnome-console
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bgnome-console
-%attr(0755,root,root) %{_sbindir}/bgnome-console
-%verify(link) %{_bindir}/bgnome-console
-%if %{mdkversion} <= 200700
-%{_menudir}/%{name}-console-gnome
-%endif
-%{_iconsdir}/%{name}.png
-%{_miconsdir}/%{name}.png
-%{_liconsdir}/%{name}.png
-%{_datadir}/applications/mandriva-%{name}-console-gnome.desktop
-%{_mandir}/man1/%{name}-bgnome-console.1*
-%endif
 
 %if %{WXWINDOWS}
 %files console-wx
