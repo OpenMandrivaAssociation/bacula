@@ -59,7 +59,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	5.0.1
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -68,7 +68,8 @@ Source0:	http://prdownloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 Source5:	http://prdownloads.sourceforge.net/%{name}/%{name}-gui-%{_guiver}.tar.gz
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
-Patch2:		bacula-pidfile.diff
+Patch1:		bacula-mandriva-platform.patch
+#Patch2:		bacula-pidfile.diff
 Patch3:		bacula-updatedb.diff
 Patch5:		bacula-gui-php_header.diff
 Patch7:		bacula-web-mdv_conf.diff
@@ -76,29 +77,27 @@ Patch9:		bacula-listen.diff
 Patch10:	bacula-2.4.3-cats.patch
 Patch12:	bacula-libwrap_nsl.diff
 Patch13:	bacula-shared_backend_libs.diff
-Patch14:	bacula-qt4_borkiness_fix.diff
+Patch14:	bacula-5.0.1-config_dir.patch
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 # Fix string literal errors - AdamW 2008/12
 Patch17:	bacula-5.0.1-literal.patch
 Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
-# lsb compliance
-Patch20:	bacula-3.0.1-lsb.patch
-# bacula 5.0.1 does not has bacula.spec.in
-Patch21:	bacula-5.0.1-nospec.patch
+Patch20:	bacula-5.0.1-static-sql.patch
+Patch21:	bacula-5.0.1-openssl100.patch
+Patch22:	bacula-5.0.1-gzip.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
 BuildRequires:	gettext-devel
-BuildRequires:	latex2html
+#BuildRequires:	latex2html
 BuildRequires:	libacl-devel
 BuildRequires:	mkisofs
 BuildRequires:	mtx
 BuildRequires:	pkgconfig
-BuildRequires:	readline-devel
-BuildRequires:	termcap-devel
-BuildRequires:	tetex-latex
+#BuildRequires:	termcap-devel
+#BuildRequires:	tetex-latex
 BuildRequires:	zlib-devel
 BuildRequires: 	openssl-devel
 BuildRequires: 	perl-base
@@ -112,6 +111,20 @@ BuildRequires:	libtool
 Buildroot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
+%{blurb}
+Bacula is a set of computer programs that permit you (or the system
+administrator) to manage backup, recovery, and verification of computer
+data across a network of computers of different kinds. In technical terms,
+it is a network client/server based backup program. Bacula is relatively
+easy to use and efficient, while offering many advanced storage management
+features that make it easy to find and recover lost or damaged files.
+
+#--- lib
+%package	-n %mklibname bacula %{version}
+Summary:	bacula shared libraries
+Group:		Archiving/Backup
+
+%description	-n %mklibname bacula %{version}
 %{blurb}
 Bacula is a set of computer programs that permit you (or the system
 administrator) to manage backup, recovery, and verification of computer
@@ -172,8 +185,8 @@ all Jobs run, and all Files saved.
 %package	dir-mysql
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires:	mysql
 Requires:	mysql-client
+Suggests:	mysql
 BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
@@ -197,9 +210,9 @@ This build requires MySQL to be installed separately as the catalog database.
 %package	dir-pgsql
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires:	postgresql8.3
-Requires:	postgresql8.3-server
-BuildRequires:	postgresql8.3-devel
+Requires:	postgresql
+Suggests:	postgresql-server
+BuildRequires:	postgresql8.4-devel
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-sqlite3
@@ -225,7 +238,9 @@ Requires:	sqlite3-tools >= 3.4.2
 BuildRequires:	sqlite3-devel >= 3.4.2
 Requires:	bacula-dir-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-mysql bacula-dir-pgsql bacula-dir-sqlite
+Conflicts:	bacula-dir-mysql bacula-dir-pgsql
+Obsoletes:	bacula-dir-sqlite
+Provides:	bacula-dir-sqlite = %{epoch}:%{version}-%{release}
 
 %description	dir-sqlite3
 %{blurb}
@@ -247,6 +262,7 @@ Summary:	Bacula Console
 Group:		Archiving/Backup
 Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
 Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
+BuildRequires:	readline-devel
 BuildRequires:	termcap-devel
 Requires:	usermode-consoleonly
 
@@ -410,24 +426,24 @@ The tray monitor for bacula.
 %setup -q
 %setup -q -D -T -a 5
 mv %{name}-gui-%{_guiver} gui
-%patch2 -p0 -b .pidfile
+%patch1 -p1 -b .mandriva
 %patch3 -p1 -b .updatedb
 %patch5 -p0 -b .php_header
-#--%patch6 -p0 -b .manpages
-%patch7 -p1
+%patch7 -p1 -b .webconf
 %patch9 -p1 -b .listen
 %patch10 -p1 -b .cats
 %patch12 -p1 -b .wrap
 %patch13 -p1 -b .shared_backend_libs
-%patch14 -p1 -b .qt4_borkiness_fix
+%patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch17 -p1 -b .literal
 %patch18 -p1 -b .backupdir
 %patch19 -p1 -b .openssl_linkage
-%patch20 -p1 -b .lsb
-%patch21 -p1 -b .nospec
+%patch20 -p1 -b .static
+%patch21 -p1 -b .openssl100
+%patch22 -p1 -b .gzip
 
-perl -spi -e 's/\@hostname\@/localhost/g' `find . -name \*.in`
+#find . -path '*.in/*' -o -name '*.in' -type f | xargs perl -spi -e 's/\@hostname\@/localhost/g'
 
 # fix conditional pam config file
 %if %{mdkversion} < 200610
@@ -441,7 +457,12 @@ bzcat %{SOURCE7} > bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --with-readline --with-db-name=%{name} --with-db-user=%{name} %{_configure_tcpw} --with-archivedir=/tmp --disable-shared --enable-static --with-hostname=localhost --with-basename=localhost
+%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=%{name} --with-db-user=%{name} %{_configure_tcpw} --with-archivedir=/tmp --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=bacula --with-fd-user=bacula --with-fd-group=bacula
+
+#--disable-shared --enable-static 
+# workaround fix-libtool-ltmain-from-overlinking bug
+mv autoconf/ltmain.sh .
+ln -s ../ltmain.sh autoconf
 
 %build
 export QMAKE="/usr/lib/qt4/bin/qmake"
@@ -551,14 +572,15 @@ for db_type in \
     install -m 755 src/tools/dbcheck-${db_type} %{buildroot}%{_sbindir}
 done
 
-# remove dbcheck left from sqlite3 build
-rm -f %{buildroot}%{_sbindir}/dbcheck
+# required to upgrade sqlite 2 database to sqlite 3
+install -m 755 updatedb/update_sqlite_tables_?_to_[4-8] %{buildroot}%{script_dir}
 
 # install the init scripts
-install -d %{buildroot}%{_initrddir}
-install -m 755 platforms/mandrake/bacula-dir %{buildroot}%{_initrddir}/bacula-dir
-install -m 755 platforms/mandrake/bacula-fd %{buildroot}%{_initrddir}/bacula-fd
-install -m 755 platforms/mandrake/bacula-sd %{buildroot}%{_initrddir}/bacula-sd
+install -d %{buildroot}%{_initrddir} %{buildroot}%{_sysconfdir}/sysconfig
+install -m 755 platforms/mandriva/bacula-dir %{buildroot}%{_initrddir}/bacula-dir
+install -m 755 platforms/mandriva/bacula-fd %{buildroot}%{_initrddir}/bacula-fd
+install -m 755 platforms/mandriva/bacula-sd %{buildroot}%{_initrddir}/bacula-sd
+install -m 644 platforms/mandriva/sysconfig %{buildroot}%{_sysconfdir}/sysconfig/bacula
 
 # install the logrotate file
 install -d %{buildroot}%{_sysconfdir}/logrotate.d
@@ -677,8 +699,6 @@ install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/%{name}-bat
 ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/%{name}-bat
 %endif
 
-rm -f %{buildroot}%{_mandir}/man1/bat.1*
-
 %if %{TRAY}
 
 %if %mdkversion <= 200700
@@ -715,16 +735,22 @@ install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bacula-tray-monitor
 ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bacula-tray-monitor
 %endif
 
-# Remove some left-over in the compil process to the correct path
-%__rm -f %{buildroot}/%{script_dir}/{start,stop}mysql
-%__rm -f %{buildroot}/%{script_dir}/gconsole
-
 # Touch temporary password replacement file
 touch %{buildroot}%{sysconf_dir}/.pw.sed
 
 # Remove unneeded script
+%__rm -f %{buildroot}/%{script_dir}/{start,stop}mysql
 %__rm -f %{buildroot}/%{_sbindir}/bacula
 %__rm -f %{buildroot}/%{script_dir}/bacula
+%__rm -f %{buildroot}/%{script_dir}/bacula_config
+%__rm -f %{buildroot}/%{script_dir}/bacula-ctl-*
+%__rm -f %{buildroot}/%{script_dir}/bconsole
+
+# Remove development libraries
+%__rm -f %{buildroot}/%{_libdir}/*.a
+for i in %{buildroot}/%{_libdir}/*.la; do
+	%__rm -f $i ${i%.la}.so
+done
 
 %if %{GUI}
 # install of bimagemgr
@@ -766,8 +792,8 @@ install -m0755 scripts/btraceback %{buildroot}%{_sbindir}/
 install -m0644 scripts/btraceback.gdb %{buildroot}%{_libdir}/bacula/
 install -m0644 scripts/btraceback.dbx %{buildroot}%{_libdir}/bacula/
 install -m0644 scripts/dvd-handler %{buildroot}%{_sysconfdir}/bacula/scripts/
-install -m0644 scripts/mtx-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
-install -m0644 scripts/disk-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
+#install -m0644 scripts/mtx-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
+#install -m0644 scripts/disk-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
 
 %pre common
 %_pre_useradd bacula /var/lib/%{name} /bin/false
@@ -787,10 +813,12 @@ if [ -e %{sysconf_dir}/.pw.sed ]; then
             -e "s/#YOU MUST SET THE MONITOR SD PASSWORD#/XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX/g" \
             %{sysconf_dir}/.pw.sed
 fi
-# generating passwords
+# generating passwords, ensuring it is not visible in process list
 for string in XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX; do
-	pass=`openssl rand -base64 33`
-	grep -q "$STRING" %{sysconf_dir}/.pw.sed || echo "s!$string!$pass!g" >> %{sysconf_dir}/.pw.sed
+    if !grep -qs "$string" %{sysconf_dir}/.pw.sed; then
+	echo -n "s!$string!" >> %{sysconf_dir}/.pw.sed
+	openssl rand -base64 33 | sed -e 's/$/!g/'  >> %{sysconf_dir}/.pw.sed
+    fi
 done
 
 %post dir-common
@@ -810,7 +838,7 @@ done
 ln -snf bacula-dir-mysql %{_sbindir}/bacula-dir
 ln -snf bscan-mysql %{_sbindir}/bscan
 ln -snf dbcheck-mysql %{_sbindir}/dbcheck
-# NOTE: IF THIS FAILS DUE TO MYSQL/PGSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
+# NOTE: IF THIS FAILS DUE TO MYSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
 DB_VER=`mysql bacula -e 'select * from Version;' | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
         echo "Hmm, doesn't look like you have an existing database."
@@ -827,19 +855,17 @@ if [ -z "$DB_VER" ]; then
 	echo 	%{script_dir}/make_bacula_tables
 	echo else manually update the database to version %{_cur_db_ver} using the script
 	echo 	%{script_dir}/update_bacula_tables
+elif [ "$DB_VER" -lt "4" ]; then
+	echo "ERROR: your bacula database version is too old to be upgraded automatically 1>&2"
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
 	mysqldump -f --opt bacula | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
 	echo "Upgrading bacula tables"
-	if [ "$DB_VER" -lt "4" ]; then
-		echo "your bacula database version is too old to be upgraded automatically"
-	else
-	    for v in `seq 5 $((%{_cur_db_ver} - 1))`; do
-		if [ "$DB_VER" -lt "$v" ]; then
-			%{script_dir}/update_mysql_tables_$((v - 1))_to_$v
-		fi
-	    done
-	fi
+	for v in `seq 5 $((%{_cur_db_ver} - 1))`; do
+	    if [ "$DB_VER" -lt "$v" ]; then
+		    %{script_dir}/update_mysql_tables_$(($v - 1))_to_$v
+	    fi
+	done
 	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
@@ -858,7 +884,7 @@ done
 ln -snf bacula-dir-postgresql %{_sbindir}/bacula-dir
 ln -snf bscan-postgresql %{_sbindir}/bscan
 ln -snf dbcheck-postgresql %{_sbindir}/dbcheck
-# NOTE: IF THIS FAILS DUE TO MYSQL/PGSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
+# NOTE: IF THIS FAILS DUE TO PSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
 DB_VER=`psql bacula -c 'select * from Version;' | tail -n 1 2>/dev/null`
 if [ -z "$DB_VER" ]; then
         echo "Hmm, doesn't look like you have an existing database."
@@ -875,19 +901,17 @@ if [ -z "$DB_VER" ]; then
 	echo 	%{script_dir}/grant_bacula_privileges
 	echo else manually update the database to version %{_cur_db_ver} using the script
 	echo 	%{script_dir}/update_bacula_tables
+elif [ "$DB_VER" -lt "7" ]; then
+	echo "ERROR: your bacula database version is too old to be upgraded automatically 1>&2"
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 	echo "Backing up bacula tables"
 	pg_dump bacula | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
 	echo "Upgrading bacula tables"
-	if [ "$DB_VER" -lt "7" ]; then
-		echo "your bacula database version is too old to be upgraded automatically"
-	else
-	    for v in `seq 8 $((%{_cur_db_ver} - 1))`; do
-		if [ "$DB_VER" -lt "$v" ]; then
-			%{script_dir}/update_postgresql_tables_$((v - 1))_to_$v
-		fi
-	    done
-	fi
+	for v in `seq 8 $((%{_cur_db_ver} - 1))`; do
+	    if [ "$DB_VER" -lt "$v" ]; then
+		    %{script_dir}/update_postgresql_tables_$(($v - 1))_to_$v
+	    fi
+	done
 	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
@@ -905,27 +929,53 @@ done
 ln -snf bacula-dir-sqlite3 %{_sbindir}/bacula-dir
 ln -snf bscan-sqlite3 %{_sbindir}/bscan
 ln -snf dbcheck-sqlite3 %{_sbindir}/dbcheck
-[ -s /var/lib/%{name}/bacula.db ] && \
+if [ -s /var/lib/bacula/bacula.db -a -x /usr/bin/sqlite ]; then
+	DB2_VER=`echo "select * from Version;" | \
+	    sqlite /var/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
+fi
+if [ -n "$DB2_VER" ]; then
+    # we have an sqlite2 db 
+    echo "SQLITE 2 database detected: will try to upgrade it."
+    echo "a backup of the untouched database will be found in /var/lib/bacula/bacula_backup.sql.bz2"
+    #TODO: check if bacula is running 
+    #service bacula-dir stop
+    echo ".dump" | sqlite /var/lib/bacula/bacula.db | \
+	bzip2 > /var/lib/bacula/bacula_backup.sql.bz2 
+    # try to upgrade it to minimum requirement for sqlite3
+    while [ "$DB2_VER" -lt "8" ]; do
+	local v=$DB2_VER
+	DB2_VER=$(($DB2_VER + 1))
+    	update_sqlite_table_${v}_$DB2_VER
+    done
+    touch /var/lib/bacula/bacula.db.new
+    echo .dump | sqlite /var/lib/bacula/bacula.db | \
+	sed 's/ INTEGER UNSIGNED AUTOINCREMENT,/ INTEGER,/' | \
+	sqlite3 /var/lib/bacula/bacula.db.new
+    mv /var/lib/bacula/bacula.db.new /var/lib/bacula/bacula.db
+fi
+if [ -s /var/lib/%{name}/bacula.db ]; then
 	DB_VER=`echo "select * from Version;" | \
-		sqlite3 /var/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
+	    sqlite3 /var/lib/%{name}/bacula.db | tail -n 1 2>/dev/null`
+fi
 if [ -z "$DB_VER" ]; then
 # grant privileges and create tables
 	%{script_dir}/grant_bacula_privileges > dev/null
 	%{script_dir}/create_bacula_database > dev/null
 	%{script_dir}/make_bacula_tables > dev/null
+elif [ "$DB_VER" -lt "8" ]; then
+	echo "ERROR: your bacula database version is too old to be upgraded automatically 1>&2"
 elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
-	echo "Backing up bacula tables"
-	echo ".dump" | sqlite3 /var/lib/%{name}/bacula.db | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
-	echo "Upgrading bacula tables"
-	if [ "$DB_VER" -lt "8" ]; then
-		echo "your bacula database version is too old to be upgraded automatically"
-	else
-	    for v in `seq 9 $((%{_cur_db_ver} - 1))`; do
-		if [ "$DB_VER" -lt "$v" ]; then
-			%{script_dir}/update_sqlite3_tables_$((v - 1))_to_$v
-		fi
-	    done
+	# in case we did a backup of an sqlite 2 database do not overwrite it
+	if [ -z "$DB2_VER" ]; then
+	    echo "Backing up bacula tables"
+	    echo ".dump" | sqlite3 /var/lib/%{name}/bacula.db | bzip2 > /var/lib/%{name}/bacula_backup.sql.bz2
 	fi
+	echo "Upgrading bacula tables"
+	for v in `seq 9 $((%{_cur_db_ver} - 1))`; do
+	    if [ "$DB_VER" -lt "$v" ]; then
+		    %{script_dir}/update_sqlite3_tables_$(($v - 1))_to_$v
+	    fi
+	done
 	%{script_dir}/update_bacula_tables
 
 	echo "If bacula works correctly you can remove the backup file /var/lib/%{name}/bacula_backup.sql.bz2"
@@ -1010,11 +1060,16 @@ fi
 %clean
 rm -rf %{buildroot}
 
+%files -n %mklibname bacula %{version}
+%exclude %{_libdir}/*a
+%exclude %{_libdir}/*la
+%{_libdir}/*.so
+
 %files common
 %defattr(0644,root,root,0755)
 %doc LICENSE
 %{_docdir}/%{name}
-#%{_docdir}/%{name}/*
+%{_sysconfdir}/sysconfig/%{name}
 %dir %{sysconf_dir}
 %dir %{script_dir}
 %attr(0755,root,root) %{_sbindir}/btraceback
@@ -1029,16 +1084,14 @@ rm -rf %{buildroot}
 %{_mandir}/man8/btraceback.8*
 # we do not need those devel libraries, as the change for each
 # database
-%exclude %{_libdir}/*a
-%exclude %{_libdir}/*la
 %if ! %{TRAY}
 %exclude %{_mandir}/man1/%{name}-tray-monitor.1*
 %endif
 %if ! %{WXWINDOWS}
 %exclude %{_mandir}/man1/%{name}-wxconsole.1*
 %endif
-%if %{BAT}
-#%exclude %{_mandir}/man1/%{name}-bat.1*
+%if ! %{BAT}
+%exclude %{_mandir}/man1/bat.1*
 %endif
 
 %files dir-common
@@ -1054,6 +1107,7 @@ rm -rf %{buildroot}
 %defattr (0755,root,root)
 %attr(0755,root,root) %{_initrddir}/%{name}-dir
 %ghost %{_sbindir}/%{name}-dir
+%ghost %{_sbindir}/dbcheck
 %ghost %{_sbindir}/bscan
 %ghost %{script_dir}/create_%{name}_database
 %ghost %{script_dir}/drop_%{name}_database
@@ -1065,7 +1119,6 @@ rm -rf %{buildroot}
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/make_catalog_backup
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/delete_catalog_backup
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/query.sql
-%exclude %{script_dir}/%{name}-ctl-dir
 
 %if %{MYSQL}
 %files dir-mysql
@@ -1111,7 +1164,6 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %{_initrddir}/%{name}-fd
 %{_sbindir}/%{name}-fd
 %attr(0644,root,root) %{_mandir}/man8/%{name}-fd.8*
-%exclude %{script_dir}/%{name}-ctl-fd
 
 %files sd
 %defattr(0755,root,root)
@@ -1134,7 +1186,6 @@ rm -rf %{buildroot}
 %{_mandir}/man8/bextract.8*
 %{_mandir}/man8/bls.8*
 %{_mandir}/man8/btape.8*
-%exclude %{script_dir}/%{name}-ctl-sd
 
 %files console
 %defattr(0644,root,root,0755)
@@ -1145,8 +1196,6 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %{_sbindir}/bconsole
 %verify(link) %{_bindir}/bconsole
 %{_mandir}/man8/bconsole.8*
-%attr(0755,root,root) %{script_dir}/bconsole
-%exclude %{script_dir}/bconsole
 
 %if %{WXWINDOWS}
 %files console-wx
@@ -1182,7 +1231,7 @@ rm -rf %{buildroot}
 %{_miconsdir}/%{name}-bat.png
 %{_liconsdir}/%{name}-bat.png
 %{_datadir}/applications/mandriva-%{name}-bat.desktop
-#%{_mandir}/man1/%{name}-bat.1*
+%{_mandir}/man1/bat.1*
 %endif
 
 %if %{GUI}
