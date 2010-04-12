@@ -1,7 +1,8 @@
 # required to build 3.0.0 correctly
 # those two are required to build on 2009.1+
-#--%define _disable_ld_no_undefined 1
-#--%define _disable_ld_as_needed 1
+%define _disable_ld_no_undefined 1
+%define _disable_ld_as_needed 1
+
 %define _disable_libtoolize 1
 
 %define name bacula
@@ -25,8 +26,6 @@
 %define sysconf_dir /etc/bacula
 %define script_dir %{_libdir}/bacula
 %define working_dir /var/lib/bacula
-%define _bindir /usr/bin
-%define pid_dir /var/run
 %define subsysdir /var/lock/subsys
 
 %{?_with_mysql: %{expand: %%global MYSQL 1}}
@@ -120,11 +119,11 @@ easy to use and efficient, while offering many advanced storage management
 features that make it easy to find and recover lost or damaged files.
 
 #--- lib
-%package	-n %mklibname bacula %{version}
+%package	-n %mklibname bacula
 Summary:	bacula shared libraries
 Group:		Archiving/Backup
 
-%description	-n %mklibname bacula %{version}
+%description	-n %mklibname bacula
 %{blurb}
 Bacula is a set of computer programs that permit you (or the system
 administrator) to manage backup, recovery, and verification of computer
@@ -397,6 +396,24 @@ easy to use and efficient, while offering many advanced storage management
 features that make it easy to find and recover lost or damaged files.
 
 Contains the bacula image manager cgi-bin
+
+#------ GUI-brestore
+%package	gui-brestore
+Summary:	Bacula Image Manager
+Group:		Archiving/Backup
+Requires(post): rpm-helper bacula-common = %{epoch}:%{version}-%{release}
+Requires(preun):rpm-helper bacula-common = %{epoch}:%{version}-%{release}
+
+%description	gui-brestore
+%{blurb}
+Bacula is a set of computer programs that permit you (or the system
+administrator) to manage backup, recovery, and verification of computer
+data across a network of computers of different kinds. In technical terms,
+it is a network client/server based backup program. Bacula is relatively
+easy to use and efficient, while offering many advanced storage management
+features that make it easy to find and recover lost or damaged files.
+
+brestore is a file restore interface
 %endif
 
 #------ Tray monitor
@@ -550,7 +567,11 @@ done
 %install
 rm -rf %{buildroot}
 
-%makeinstall sysconfdir=%{buildroot}/%{sysconf_dir} scriptdir=%{buildroot}/%{script_dir} working_dir=%{buildroot}/%{working_dir} docdir=%{buildroot}/%{_docdir}/%{name}
+# do not use %%makeinstall here
+%make install DESTDIR=%{buildroot} dir_user= dir_group=
+
+#lazy me
+mv %{buildroot}%{script_dir}/make_catalog_backup.pl %{buildroot}%{sysconf_dir}/scripts/make_catalog_backup.pl
 
 # install the catalog scripts and binaries
 for db_type in \
@@ -561,7 +582,8 @@ for db_type in \
 	postgresql \
 %endif
 	sqlite3; do
-    install -m 755 updatedb/update_${db_type}_tables_?_to_? %{buildroot}%{script_dir}
+    install -m 755 updatedb/update_${db_type}_tables_*_to_? %{buildroot}%{script_dir}
+    install -m 755 updatedb/update_${db_type}_tables_*_to_?? %{buildroot}%{script_dir}
     for f in create_${db_type}_database drop_${db_type}_database drop_${db_type}_tables \
 	grant_${db_type}_privileges make_${db_type}_tables update_${db_type}_tables ; do
     	install -m 755 src/cats/$f %{buildroot}%{script_dir}
@@ -602,7 +624,7 @@ install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bconsole
 ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bconsole
 
 # install the menu stuff
-%if %{WXWINDOWS} || %{BAT}
+%if %{WXWINDOWS} || %{BAT} || %{GUI}
 
 %if %mdkversion <= 200700
 install -d %{buildroot}%{_menudir}
@@ -611,7 +633,9 @@ install -d %{buildroot}%{_menudir}
 install -d %{buildroot}%{_iconsdir}
 install -d %{buildroot}%{_miconsdir}
 install -d %{buildroot}%{_liconsdir}
+%endif
 
+%if %{WXWINDOWS} || %{BAT}
 convert scripts/bacula.png -resize 16x16 %{buildroot}%{_miconsdir}/%{name}.png
 convert scripts/bacula.png -resize 32x32 %{buildroot}%{_iconsdir}/%{name}.png
 convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/%{name}.png
@@ -651,13 +675,10 @@ SESSION=true
 EOF
 install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bwx-console
 ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bwx-console
-# we need to install the program files as well
-install -m 755 src/wx-console/bwx-console %{buildroot}%{_sbindir}
 cp -p src/console/bconsole.conf %{buildroot}%{sysconf_dir}/bwx-console.conf
 %endif
 
 %if %{BAT}
-install -m0755 src/qt-console/bat %{buildroot}%{_sbindir}/%{name}-bat
 install -m0644 src/qt-console/bat.conf %{buildroot}%{sysconf_dir}/bat.conf
 
 # make some icons
@@ -668,7 +689,7 @@ convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdi
 %if %mdkversion <= 200700
 cat << EOF > %{buildroot}%{_menudir}/%{name}-bat
 ?package(%{name}-bat): \
-command="%{_bindir}/%{name}-bat" \
+command="%{_bindir}/bat" \
 icon="%{name}-bat.png" \
 needs="x11" \
 title="Bacula Administration Tool" \
@@ -683,20 +704,20 @@ cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}-bat.desktop << EOF
 [Desktop Entry]
 Name=Bacula Administration Tool (QT4)
 Comment=Bacula Administration Tool
-Exec=%{_bindir}/%{name}-bat
+Exec=%{_bindir}/bat
 Icon=%{name}-bat
 Terminal=false
 Type=Application
 Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
 EOF
 
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/%{name}-bat
+cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bat
 USER=root
-PROGRAM=%{_sbindir}/%{name}-bat
+PROGRAM=%{_sbindir}/bat
 SESSION=true
 EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/%{name}-bat
-ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/%{name}-bat
+install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bat
+ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bat
 %endif
 
 %if %{TRAY}
@@ -758,6 +779,7 @@ install -d -m 0755 %{buildroot}/var/www/html/bimagemgr
 install -d -m 0755 %{buildroot}/var/www/cgi-bin
 install -d -m 0755 %{buildroot}/%{_sysconfdir}
 cp gui/bimagemgr/bimagemgr.pl %{buildroot}/var/www/cgi-bin
+cp gui/bimagemgr/config.pm %{buildroot}/var/www/cgi-bin/config.pm
 cp gui/bimagemgr/create_cdimage_table.pl %{buildroot}/%{_sysconfdir}
 cp gui/bimagemgr/*.{html,gif} %{buildroot}/var/www/html/bimagemgr
 
@@ -770,6 +792,48 @@ install -d -m 0755 %{buildroot}/var/cache/httpd/bacula-web
 install -d -m 0755 %{buildroot}%{_sysconfdir}/bacula/bacula-web
 mv %{buildroot}/var/www/html/bacula/bacula-web/configs/bacula.conf %{buildroot}%{_sysconfdir}/bacula/bacula-web/bacula.conf
 rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
+
+# install of brestore
+convert gui/brestore/brestore.png -resize 16x16 %{buildroot}%{_miconsdir}/brestore.png
+convert gui/brestore/brestore.png -resize 32x32 %{buildroot}%{_iconsdir}/brestore.png
+convert gui/brestore/brestore.png -resize 48x48 %{buildroot}%{_liconsdir}/brestore.png
+
+%if %mdkversion <= 200700
+cat << EOF > %{buildroot}%{_menudir}/%{name}-gui-brestore
+?package(%{name}-gui-brestore): \
+command="%{_bindir}/brestore" \
+icon="brestore.png" \
+needs="x11" \
+title="Bacula Restoration GUI" \
+longtitle="Bacula Restoration GUI" \
+section="System/Archiving/Backup"
+EOF
+%endif
+
+# XDG menu
+install -d %{buildroot}%{_datadir}/applications
+cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}-gui-brestore.desktop << EOF
+[Desktop Entry]
+Name=Bacula Restoration GUI
+Comment=Bacula Restoration GUI
+Exec=%{_bindir}/brestore
+Icon=brestore
+Terminal=false
+Type=Application
+Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
+EOF
+
+cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/brestore
+USER=root
+PROGRAM=%{_sbindir}/brestore.pl
+SESSION=true
+EOF
+
+install -m 0755 gui/brestore/brestore.pl %{buildroot}%{_sbindir}
+install -d -m 0755 %{buildroot}%{_datadir}/brestore
+cp gui/brestore/brestore.glade %{buildroot}%{_datadir}/brestore
+cp bacula.pam %{buildroot}/etc/pam.d/brestore
+ln -s /usr/bin/consolehelper %{buildroot}/usr/bin/brestore
 %endif
 
 # Nagios plugin does not works correctly with 3.0.0 yet :(
@@ -786,14 +850,6 @@ rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 #	command_line	%{_libdir}/nagios/plugins/check_bacula -H \$HOSTADDRESS$ -D \$ARG1\$ -M \$ARG2\$ -K \$ARG3\$ -P \$ARG4\$
 #	}
 #EOF
-
-# required for certification
-install -m0755 scripts/btraceback %{buildroot}%{_sbindir}/
-install -m0644 scripts/btraceback.gdb %{buildroot}%{_libdir}/bacula/
-install -m0644 scripts/btraceback.dbx %{buildroot}%{_libdir}/bacula/
-install -m0644 scripts/dvd-handler %{buildroot}%{_sysconfdir}/bacula/scripts/
-#install -m0644 scripts/mtx-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
-#install -m0644 scripts/disk-changer %{buildroot}%{_sysconfdir}/bacula/scripts/
 
 %pre common
 %_pre_useradd bacula /var/lib/%{name} /bin/false
@@ -1036,6 +1092,18 @@ fi
 %endif
 %endif
 
+%if %{GUI}
+%post gui-brestore
+%if %mdkversion < 200900
+%update_menus
+%endif
+
+%if %mdkversion < 200900
+%postun gui-brestore-monitor
+%clean_menus
+%endif
+%endif
+
 %if %{TRAY}
 %post tray-monitor
 %post_fix_config tray-monitor
@@ -1060,15 +1128,15 @@ fi
 %clean
 rm -rf %{buildroot}
 
-%files -n %mklibname bacula %{version}
-%exclude %{_libdir}/*a
-%exclude %{_libdir}/*la
+%files -n %mklibname bacula
 %{_libdir}/*.so
 
 %files common
 %defattr(0644,root,root,0755)
-%doc LICENSE
 %{_docdir}/%{name}
+%if %{BAT}
+%exclude %{_docdir}/%{name}/html
+%endif
 %{_sysconfdir}/sysconfig/%{name}
 %dir %{sysconf_dir}
 %dir %{script_dir}
@@ -1096,9 +1164,6 @@ rm -rf %{buildroot}
 
 %files dir-common
 %defattr(0644,root,root,0755)
-%doc ChangeLog CheckList ReleaseNotes kernstodo LICENSE
-# FIXME : Merge baculs-docs and use it
-#%doc doc/*.pdf doc/manual examples
 %attr(0600,root,root) %config(noreplace) %{sysconf_dir}/%{name}-dir.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}-dir
 %{_mandir}/man8/%{name}-dir.8*
@@ -1117,6 +1182,7 @@ rm -rf %{buildroot}
 %ghost %{script_dir}/update_%{name}_tables
 %attr(0600,root,root) %ghost %{sysconf_dir}/.pw.sed
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/make_catalog_backup
+%attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/make_catalog_backup.pl
 %attr(0754,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/delete_catalog_backup
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/%{name}/scripts/query.sql
 
@@ -1155,19 +1221,19 @@ rm -rf %{buildroot}
 %{script_dir}/drop_sqlite3_tables
 %{script_dir}/grant_sqlite3_privileges
 %{script_dir}/make_sqlite3_tables
-%{script_dir}/update_sqlite3_tables*
+%{script_dir}/update_sqlite*_tables*
 
 %files fd
 %defattr(0755,root,root)
-%doc LICENSE
 %attr(0600,root,root) %config(noreplace) %{sysconf_dir}/%{name}-fd.conf
 %attr(0755,root,root) %{_initrddir}/%{name}-fd
 %{_sbindir}/%{name}-fd
+%{script_dir}/bpipe-fd.so
+
 %attr(0644,root,root) %{_mandir}/man8/%{name}-fd.8*
 
 %files sd
 %defattr(0755,root,root)
-%doc LICENSE
 %attr(0755,root,root) %{_initrddir}/%{name}-sd
 %dir %{sysconf_dir}
 %attr(0600,root,root) %config(noreplace) %{sysconf_dir}/%{name}-sd.conf
@@ -1189,7 +1255,6 @@ rm -rf %{buildroot}
 
 %files console
 %defattr(0644,root,root,0755)
-%doc LICENSE
 %attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bconsole.conf
 %config(noreplace) %{_sysconfdir}/security/console.apps/bconsole
 %config(noreplace) %{_sysconfdir}/pam.d/bconsole
@@ -1200,7 +1265,6 @@ rm -rf %{buildroot}
 %if %{WXWINDOWS}
 %files console-wx
 %defattr(0644,root,root,0755)
-%doc LICENSE
 %attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bwx-console.conf
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bwx-console
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
@@ -1219,11 +1283,12 @@ rm -rf %{buildroot}
 %if %{BAT}
 %files bat
 %defattr(0644,root,root,0755)
+%{_docdir}/%{name}/html
 %attr(0600,root,root) %config(noreplace) %{sysconf_dir}/bat.conf
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/%{name}-bat
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}-bat
-%attr(0755,root,root) %{_sbindir}/%{name}-bat
-%verify(link) %{_bindir}/%{name}-bat
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bat
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bat
+%attr(0755,root,root) %{_sbindir}/bat
+%verify(link) %{_bindir}/bat
 %if %{mdkversion} <= 200700
 %{_menudir}/%{name}-bat
 %endif
@@ -1245,13 +1310,26 @@ rm -rf %{buildroot}
 /var/www/html/bimagemgr/*.gif
 /var/www/html/bimagemgr/*.html
 /var/www/cgi-bin/bimagemgr.pl
+/var/www/cgi-bin/config.pm
 %{_sysconfdir}/create_cdimage_table.pl
+
+%files gui-brestore
+%defattr(0644,root,root,0755)
+%doc COPYING README INSTALL ReleaseNotes
+%attr(0644,root,root) %config(noreplace) /etc/security/console.apps/brestore
+%attr(0644,root,root) %config(noreplace) /etc/pam.d/brestore
+%attr(0755,root,root) %{_sbindir}/brestore.pl
+%verify(link) %{_bindir}/brestore
+%{_datadir}/brestore/brestore.glade
+%{_iconsdir}/brestore.png
+%{_miconsdir}/brestore.png
+%{_liconsdir}/brestore.png
+%{_datadir}/applications/mandriva-%{name}-gui-brestore.desktop
 %endif
 
 %if %{TRAY}
 %files tray-monitor
 %defattr(0644,root,root,0755)
-%doc LICENSE
 %config(noreplace) %{sysconf_dir}/tray-monitor.conf
 %config(noreplace) %{_sysconfdir}/security/console.apps/%{name}-tray-monitor
 %config(noreplace) %{_sysconfdir}/pam.d/%{name}-tray-monitor
