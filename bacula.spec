@@ -142,6 +142,8 @@ Conflicts:	bacula-dir-common < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-pgsql < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-sqlite3 < %{epoch}:%{version}-%{release}
+# bacula-dir-sqlite has been removed but we keep the conflict for upgrades
+Conflicts:	bacula-dir-sqlite < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-fd < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-sd < %{epoch}:%{version}-%{release}
 Conflicts:	bacula-console < %{epoch}:%{version}-%{release}
@@ -161,12 +163,12 @@ features that make it easy to find and recover lost or damaged files.
 %package	dir-common
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires(post): rpm-helper perl-base sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun): rpm-helper perl-base sed bacula-common = %{epoch}:%{version}-%{release}
+Requires(pre):	bacula-common
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 %if %{TCPW}
 Requires:	tcp_wrappers
-Suggests:	mail-server
 %endif
+Suggests:	mail-server
 
 %description	dir-common
 %{blurb}
@@ -187,7 +189,11 @@ Group:		Archiving/Backup
 Requires:	mysql-client
 Suggests:	mysql
 BuildRequires:	mysql-devel >= 3.23
-Requires:	bacula-dir-common
+Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
+Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
+Requires(post): rpm-helper
+Requires(preun):	rpm-helper
+Requires(postun):	bacula-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-pgsql bacula-dir-sqlite3
 
@@ -212,7 +218,11 @@ Group:		Archiving/Backup
 Requires:	postgresql
 Suggests:	postgresql-server
 BuildRequires:	postgresql8.4-devel
-Requires:	bacula-dir-common
+Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
+Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
+Requires(post): rpm-helper
+Requires(preun):	rpm-helper
+Requires(postun):	bacula-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-sqlite3
 
@@ -235,9 +245,14 @@ Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	sqlite3-tools >= 3.4.2
 BuildRequires:	sqlite3-devel >= 3.4.2
-Requires:	bacula-dir-common
+Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
+Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
+Requires(post): rpm-helper
+Requires(preun):	rpm-helper
+Requires(postun):	bacula-common
 Provides:	bacula-dir = %{epoch}:%{version}-%{release}
 Conflicts:	bacula-dir-mysql bacula-dir-pgsql
+# bacula-dir-sqlite has been removed we now provide it for upgrades
 Obsoletes:	bacula-dir-sqlite
 Provides:	bacula-dir-sqlite = %{epoch}:%{version}-%{release}
 
@@ -259,8 +274,7 @@ This build uses an embedded sqlite catalog database.
 %package	console
 Summary:	Bacula Console
 Group:		Archiving/Backup
-Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 BuildRequires:	readline-devel
 BuildRequires:	termcap-devel
 Requires:	usermode-consoleonly
@@ -277,8 +291,7 @@ This is the text only console interface.
 Summary:	Bacula wxWindows Console
 Group:		Archiving/Backup
 BuildRequires:	wxgtku-devel
-Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
 
 %description	console-wx
@@ -295,8 +308,7 @@ Summary:	Bacula Administration Tool
 Group:		Archiving/Backup
 BuildRequires:	qt4-devel >= 4.2
 BuildRequires:	libqwt-devel >= 5.0.2
-Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
 
 %description	bat
@@ -310,8 +322,10 @@ the client or server packages.
 %package	fd
 Summary:	Bacula File services (Client)
 Group:		Archiving/Backup
-Requires(post): rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun):rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
+Requires(post): rpm-helper
+Requires(preun):	rpm-helper
+Requires(postun):	bacula-common
 %if %{TCPW}
 Requires:	tcp_wrappers
 %endif
@@ -332,8 +346,10 @@ Bacula configuration file).
 %package	sd
 Summary:	Bacula Storage services
 Group:		Archiving/Backup
-Requires(post): rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun):rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
+Requires(post): rpm-helper
+Requires(preun):	rpm-helper
+Requires(postun):	bacula-common
 %if %{TCPW}
 Requires:	tcp_wrappers
 %endif
@@ -352,8 +368,7 @@ device (usually a tape drive).
 %package	gui-web
 Summary:	Bacula Web GUI
 Group:		Archiving/Backup
-Requires(post): rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun):rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 Requires:	webserver
 Requires:	apache-mod_php
 Requires:	php-pear
@@ -380,8 +395,7 @@ to use either of them as the backend database.
 %package	gui-bimagemgr
 Summary:	Bacula Image Manager
 Group:		Archiving/Backup
-Requires(post): rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun):rpm-helper sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 Requires:	webserver
 Requires: 	perl-DBI
 Requires:	perl-DBD-mysql
@@ -401,8 +415,8 @@ Contains the bacula image manager cgi-bin
 %package	gui-brestore
 Summary:	Bacula Image Manager
 Group:		Archiving/Backup
-Requires(post): rpm-helper bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun):rpm-helper bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
+Requires:	usermode, usermode-consoleonly
 
 %description	gui-brestore
 %{blurb}
@@ -422,8 +436,7 @@ brestore is a file restore interface
 Summary:	Bacula Tray Monitor
 Group:		Archiving/Backup
 BuildRequires:	gtk2-devel >= 2.4
-Requires(post): sed bacula-common = %{epoch}:%{version}-%{release}
-Requires(preun): sed bacula-common = %{epoch}:%{version}-%{release}
+Requires:	bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
 
 %description	tray-monitor
@@ -871,20 +884,27 @@ if [ -e %{sysconf_dir}/.pw.sed ]; then
 fi
 # generating passwords, ensuring it is not visible in process list
 for string in XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX; do
-    if !grep -qs "$string" %{sysconf_dir}/.pw.sed; then
+    if ! grep -qs "$string" %{sysconf_dir}/.pw.sed; then
 	echo -n "s!$string!" >> %{sysconf_dir}/.pw.sed
 	openssl rand -base64 33 | sed -e 's/$/!g/'  >> %{sysconf_dir}/.pw.sed
     fi
 done
 
-%post dir-common
+%post
 %post_fix_config *
-%_post_service bacula-dir
 
-%preun dir-common
-%_preun_service bacula-dir
+#we have to restart fd and sd if we changed their configuration file
+if [ -x %{_initrddir}/%{name}-fd ]; then
+%{_initrddir}/%{name}-fd condrestart
+fi
+if [ -x %{_initrddir}/%{name}-sd ]; then
+%{_initrddir}/%{name}-sd condrestart
+fi
 
 %if %{MYSQL}
+%preun dir-mysql
+%_preun_service bacula-dir
+
 %post dir-mysql
 umask 077
 for f in create_mysql_database drop_mysql_database drop_mysql_tables \
@@ -928,9 +948,13 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 fi
 chown -R bacula:bacula /var/lib/%{name}
 chmod -R u+rX,go-rwx /var/lib/%{name}
+%_post_service bacula-dir
 %endif
 
 %if %{PGSQL}
+%preun dir-pgsql
+%_preun_service bacula-dir
+
 %post dir-pgsql
 umask 077
 for f in create_postgresql_database drop_postgresql_database drop_postgresql_tables \
@@ -974,7 +998,11 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 fi
 chown -R bacula:bacula /var/lib/%{name}
 chmod -R u+rX,go-rwx /var/lib/%{name}
+%_post_service bacula-dir
 %endif
+
+%preun dir-sqlite3
+%_preun_service bacula-dir
 
 %post dir-sqlite3
 umask 077
@@ -1038,6 +1066,7 @@ elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
 fi
 chown -R bacula:bacula /var/lib/%{name}
 chmod -R u+rX,go-rwx /var/lib/%{name}
+%_post_service bacula-dir
 
 %post fd
 %post_fix_config bacula-fd
