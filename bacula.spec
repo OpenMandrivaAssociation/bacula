@@ -58,7 +58,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		%{name}
 Version:	5.0.1
-Release:	%mkrel 3
+Release:	%mkrel 4
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
