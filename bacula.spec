@@ -7,7 +7,7 @@
 
 %define name bacula
 
-%define _guiver 5.0.1
+%define _guiver 5.0.2
 
 %define _cur_db_ver 12
 
@@ -26,6 +26,7 @@
 %define sysconf_dir %{_sysconfdir}/bacula
 %define script_dir %{_libdir}/bacula
 %define working_dir /var/lib/bacula
+%define archivedir /var/spool/bacula
 %define subsysdir /var/lock/subsys
 
 %{?_with_mysql: %{expand: %%global MYSQL 1}}
@@ -57,8 +58,8 @@
 #------ Main file
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	5.0.1
-Release:	%mkrel 5
+Version:	5.0.2
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -68,35 +69,28 @@ Source5:	http://prdownloads.sourceforge.net/bacula/bacula-gui-%{_guiver}.tar.gz
 Source6:	bacula.pam-0.77.bz2
 Source7:	bacula.pam.bz2
 Patch1:		bacula-mandriva-platform.patch
-#Patch2:		bacula-pidfile.diff
 Patch3:		bacula-updatedb.diff
 Patch5:		bacula-gui-php_header.diff
 Patch7:		bacula-web-mdv_conf.diff
 Patch9:		bacula-listen.diff
 Patch10:	bacula-2.4.3-cats.patch
-Patch12:	bacula-libwrap_nsl.diff
-Patch13:	bacula-shared_backend_libs.diff
 Patch14:	bacula-5.0.1-config_dir.patch
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 # Fix string literal errors - AdamW 2008/12
-Patch17:	bacula-5.0.1-literal.patch
+Patch17:	bacula-5.0.2-literal.patch
 Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
 Patch20:	bacula-5.0.1-static-sql.patch
-Patch21:	bacula-5.0.1-openssl100.patch
 Patch22:	bacula-5.0.1-gzip.patch
 BuildRequires:	X11-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
 BuildRequires:	gettext-devel
-#BuildRequires:	latex2html
 BuildRequires:	libacl-devel
 BuildRequires:	mkisofs
 BuildRequires:	mtx
 BuildRequires:	pkgconfig
-#BuildRequires:	termcap-devel
-#BuildRequires:	tetex-latex
 BuildRequires:	zlib-devel
 BuildRequires: 	openssl-devel
 BuildRequires: 	perl-base
@@ -457,18 +451,13 @@ mv bacula-gui-%{_guiver} gui
 %patch7 -p1 -b .webconf
 %patch9 -p1 -b .listen
 %patch10 -p1 -b .cats
-%patch12 -p1 -b .wrap
-%patch13 -p1 -b .shared_backend_libs
 %patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch17 -p1 -b .literal
 %patch18 -p1 -b .backupdir
 %patch19 -p1 -b .openssl_linkage
 %patch20 -p1 -b .static
-%patch21 -p1 -b .openssl100
 %patch22 -p1 -b .gzip
-
-#find . -path '*.in/*' -o -name '*.in' -type f | xargs perl -spi -e 's/\@hostname\@/localhost/g'
 
 # fix conditional pam config file
 %if %{mdkversion} < 200610
@@ -482,7 +471,7 @@ bzcat %{SOURCE7} > bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=/tmp --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=bacula --with-fd-user=bacula --with-fd-group=bacula
+%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=%{archivedir} --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=tape --with-fd-user=bacula --with-fd-group=bacula
 
 #--disable-shared --enable-static 
 # workaround fix-libtool-ltmain-from-overlinking bug
@@ -620,6 +609,7 @@ install -d %{buildroot}%{_sysconfdir}/logrotate.d
 cp scripts/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/bacula-dir
 
 install -d %{buildroot}%{working_dir}
+install -D -d %{buildroot}%{archivedir}/bacula-restores
 
 install -d %{buildroot}%{_sysconfdir}/security/console.apps
 install -d %{buildroot}%{_sysconfdir}/pam.d
@@ -1253,6 +1243,7 @@ fi
 rm -rf %{buildroot}
 
 %files -n %mklibname bacula
+%defattr(0755,root,root,0755)
 %{_libdir}/*.so
 
 %files common
@@ -1274,8 +1265,7 @@ rm -rf %{buildroot}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/bacula.8*
 %{_mandir}/man8/btraceback.8*
-# we do not need those devel libraries, as the change for each
-# database
+# exclude some manpage here if we are not building the related subpackage
 %if ! %{TRAY}
 %exclude %{_mandir}/man1/bacula-tray-monitor.1*
 %endif
@@ -1354,6 +1344,8 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %{_initrddir}/bacula-fd
 %{_sbindir}/bacula-fd
 %{script_dir}/bpipe-fd.so
+%dir %attr(0770,bacula,bacula) %{archivedir}
+%dir %attr(0770,bacula,bacula) %{archivedir}/bacula-restores
 
 %attr(0644,root,root) %{_mandir}/man8/bacula-fd.8*
 
@@ -1378,6 +1370,7 @@ rm -rf %{buildroot}
 %{_mandir}/man8/bextract.8*
 %{_mandir}/man8/bls.8*
 %{_mandir}/man8/btape.8*
+%dir %attr(0770,bacula,bacula) %{archivedir}
 
 %files console
 %defattr(0644,root,root,0755)
