@@ -59,7 +59,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	5.0.2
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -74,6 +74,9 @@ Patch5:		bacula-gui-php_header.diff
 Patch7:		bacula-web-mdv_conf.diff
 Patch9:		bacula-listen.diff
 Patch10:	bacula-2.4.3-cats.patch
+# Patches 12 and 13 are required for backports only
+Patch12:	bacula-5.0.2-libwrap_nsl.diff
+Patch13:	bacula-5.0.2-sqlite-threadsafe.diff
 Patch14:	bacula-5.0.1-config_dir.patch
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 # Fix string literal errors - AdamW 2008/12
@@ -99,7 +102,11 @@ BuildRequires: 	python-devel
 BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
+%if %{mdkversion} >= 200800
 BuildRequires:	imagemagick
+%else
+BuildRequires:	ImageMagick
+%endif
 BuildRequires:	libtool
 Buildroot:	%{_tmppath}/bacula-%{version}-%{release}-buildroot
 
@@ -163,7 +170,9 @@ Requires:	bacula-common = %{epoch}:%{version}-%{release}
 %if %{TCPW}
 Requires:	tcp_wrappers
 %endif
+%if %{mdkversion} >= 200810
 Suggests:	mail-server
+%endif
 
 %description	dir-common
 %{blurb}
@@ -182,7 +191,9 @@ all Jobs run, and all Files saved.
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	mysql-client
+%if %{mdkversion} >= 200810
 Suggests:	mysql
+%endif
 BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
@@ -209,8 +220,18 @@ This build requires MySQL to be installed separately as the catalog database.
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	postgresql
+%if %{mdkversion} >= 200810
 Suggests:	postgresql-server
+%endif
+%if %{mdkversion} < 200810
+BuildRequires:	postgresql-devel
+%else
+%if %{mdkversion} < 201000
+BuildRequires:	postgresql8.3-devel
+%else
 BuildRequires:	postgresql8.4-devel
+%endif
+%endif
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post): rpm-helper
@@ -451,6 +472,8 @@ mv bacula-gui-%{_guiver} gui
 %patch7 -p1 -b .webconf
 %patch9 -p1 -b .listen
 %patch10 -p1 -b .cats
+%patch12 -p1 -b .wrap
+%patch13 -p1 -b .sqlite_thread
 %patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch17 -p1 -b .literal
@@ -1213,7 +1236,7 @@ fi
 %endif
 
 %if %mdkversion < 200900
-%postun gui-brestore-monitor
+%postun gui-brestore
 %clean_menus
 %endif
 %endif
@@ -1270,7 +1293,7 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/bacula-tray-monitor.1*
 %endif
 %if ! %{WXWINDOWS}
-%exclude %{_mandir}/man1/bacula-wxconsole.1*
+%exclude %{_mandir}/man1/bacula-bwxconsole.1*
 %endif
 %if ! %{BAT}
 %exclude %{_mandir}/man1/bat.1*
@@ -1440,6 +1463,9 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %{_sbindir}/brestore.pl
 %verify(link) %{_bindir}/brestore
 %{_datadir}/brestore/brestore.glade
+%if %{mdkversion} <= 200700
+%{_menudir}/bacula-gui-brestore
+%endif
 %{_iconsdir}/brestore.png
 %{_miconsdir}/brestore.png
 %{_liconsdir}/brestore.png
