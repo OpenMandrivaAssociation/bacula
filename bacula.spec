@@ -7,7 +7,7 @@
 
 %define name bacula
 
-%define _guiver 5.0.2
+%define _guiver 5.0.3
 
 %define _cur_db_ver 12
 
@@ -58,8 +58,8 @@
 #------ Main file
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	5.0.2
-Release:	%mkrel 5
+Version:	5.0.3
+Release:	%mkrel 1
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -79,8 +79,6 @@ Patch12:	bacula-5.0.2-libwrap_nsl.diff
 Patch13:	bacula-5.0.2-sqlite-threadsafe.diff
 Patch14:	bacula-5.0.1-config_dir.patch
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
-# Fix string literal errors - AdamW 2008/12
-Patch17:	bacula-5.0.2-literal.patch
 Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
 Patch20:	bacula-5.0.1-static-sql.patch
@@ -476,9 +474,8 @@ mv bacula-gui-%{_guiver} gui
 %patch13 -p1 -b .sqlite_thread
 %patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
-%patch17 -p1 -b .literal
 %patch18 -p1 -b .backupdir
-%patch19 -p1 -b .openssl_linkage
+%patch19 -p0 -b .openssl_linkage
 %patch20 -p1 -b .static
 %patch22 -p1 -b .gzip
 
@@ -1284,6 +1281,7 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %{_sbindir}/bwild
 %{_libexecdir}/bacula/btraceback.gdb
 %{_libexecdir}/bacula/btraceback.dbx
+%{_libexecdir}/bacula/btraceback.mdb
 %attr(770, bacula, bacula) %dir %{working_dir}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/bacula.8*
