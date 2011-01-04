@@ -83,14 +83,7 @@ Patch19:	bacula-openssl_linkage.patch
 Patch20:	bacula-5.0.1-static-sql.patch
 Patch22:	bacula-5.0.1-gzip.patch
 Patch23:	bacula-5.0.3-mysql-lib.patch
-Patch24:	bacula-5.0.3-fix-str-fmt.patch
 Patch25:	bacula-5.0.3-link.patch
-BuildRequires:	libx11-devel
-Buildrequires:	libxau-devel
-BuildRequires:	libxcb-devel
-BuildRequires:	libxdmcp-devel
-BuildRequires:	libxrender-devel
-Buildrequires:	libxml2-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
@@ -490,7 +483,6 @@ mv bacula-gui-%{_guiver} gui
 %patch20 -p1 -b .static
 %patch22 -p1 -b .gzip
 %patch23 -p0 -b .mysql
-%patch24 -p0 -b .str
 %patch25 -p0 -b .link
 
 # fix conditional pam config file
