@@ -1,7 +1,6 @@
 # required to build 3.0.0 correctly
 # those two are required to build on 2009.1+
 %define _disable_ld_no_undefined 1
-%define _disable_ld_as_needed 1
 
 %define _disable_libtoolize 1
 
@@ -83,7 +82,15 @@ Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
 Patch20:	bacula-5.0.1-static-sql.patch
 Patch22:	bacula-5.0.1-gzip.patch
-BuildRequires:	X11-devel
+Patch23:	bacula-5.0.3-mysql-lib.patch
+Patch24:	bacula-5.0.3-fix-str-fmt.patch
+Patch25:	bacula-5.0.3-link.patch
+BuildRequires:	libx11-devel
+Buildrequires:	libxau-devel
+BuildRequires:	libxcb-devel
+BuildRequires:	libxdmcp-devel
+BuildRequires:	libxrender-devel
+Buildrequires:	libxml2-devel
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
@@ -227,7 +234,11 @@ BuildRequires:	postgresql-devel
 %if %{mdkversion} < 201000
 BuildRequires:	postgresql8.3-devel
 %else
+%if %{mdkversion} < 201100
 BuildRequires:	postgresql8.4-devel
+%else
+BuildRequires:	postgresql9.0-devel
+%endif
 %endif
 %endif
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
@@ -478,6 +489,9 @@ mv bacula-gui-%{_guiver} gui
 %patch19 -p0 -b .openssl_linkage
 %patch20 -p1 -b .static
 %patch22 -p1 -b .gzip
+%patch23 -p0 -b .mysql
+%patch24 -p0 -b .str
+%patch25 -p0 -b .link
 
 # fix conditional pam config file
 %if %{mdkversion} < 200610
@@ -502,7 +516,7 @@ ln -s ../ltmain.sh autoconf
 find src -name \*.conf.in -exec sed -i -e 's/@hostname@/@basename@/' {} \;
 
 %build
-export QMAKE="/usr/lib/qt4/bin/qmake"
+export QMAKE="%{qt4bin}/qmake"
 
 %serverbuild
 
@@ -510,7 +524,7 @@ export QMAKE="/usr/lib/qt4/bin/qmake"
 export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
 
 %if %{MYSQL}
-%configure --with-mysql \
+%configure2_5x --with-mysql \
 	%_configure_common \
 	--without-postgresql --without-sqlite3 \
 	--disable-bwx-console --disable-bat --disable-tray-monitor
@@ -528,7 +542,7 @@ done
 %endif
 
 %if %{PGSQL}
-%configure --with-postgresql \
+%configure2_5x --with-postgresql \
 	%_configure_common \
 	--without-mysql --without-sqlite3 \
 	--disable-bwx-console --disable-bat --disable-tray-monitor
@@ -547,7 +561,7 @@ done
 
 # now build sqlite3 and the rest of GUI tools
 
-%configure --with-sqlite3 \
+%configure2_5x --with-sqlite3 \
 	%_configure_common \
 	--without-mysql --without-postgresql \
 %if %{WXWINDOWS}
@@ -578,7 +592,7 @@ done
 # Now we build the gui
 (
   cd gui
-  %configure --with-bacula="${PWD%/*}" \
+  %configure2_5x --with-bacula="${PWD%/*}" \
 	%_configure_common
   %make
 )
@@ -588,7 +602,7 @@ done
 rm -rf %{buildroot}
 
 # do not use %%makeinstall here
-%make install DESTDIR=%{buildroot} dir_user= dir_group=
+%makeinstall_std dir_user= dir_group=
 
 #lazy me
 mv %{buildroot}%{script_dir}/make_catalog_backup.pl %{buildroot}%{sysconf_dir}/scripts/make_catalog_backup.pl
