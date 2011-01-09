@@ -1,7 +1,7 @@
 # required to build 3.0.0 correctly
 # those two are required to build on 2009.1+
 %define _disable_ld_no_undefined 1
-
+%define _requires_exceptions perl(Bbase)
 %define _disable_libtoolize 1
 
 %define name bacula
@@ -58,15 +58,17 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	5.0.3
-Release:	%mkrel 1
+Release:	%mkrel 2
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
 URL:		http://www.bacula.org/
 Source0:	http://prdownloads.sourceforge.net/bacula/bacula-%{version}.tar.gz
 Source5:	http://prdownloads.sourceforge.net/bacula/bacula-gui-%{_guiver}.tar.gz
-Source6:	bacula.pam-0.77.bz2
-Source7:	bacula.pam.bz2
+Source6:	bacula.pam-0.77
+Source7:	bacula.pam
+Source8:	bacula-sudoers
+Patch0:		bacula-git-20101213.patch
 Patch1:		bacula-mandriva-platform.patch
 Patch3:		bacula-updatedb.diff
 Patch5:		bacula-gui-php_header.diff
@@ -78,9 +80,11 @@ Patch12:	bacula-5.0.2-libwrap_nsl.diff
 Patch13:	bacula-5.0.2-sqlite-threadsafe.diff
 Patch14:	bacula-5.0.1-config_dir.patch
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
+Patch16:	bacula-sudo_sd.diff
 Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
 Patch20:	bacula-5.0.1-static-sql.patch
+Patch21:	bacula-5.0.3-bnet.patch
 Patch22:	bacula-5.0.1-gzip.patch
 Patch23:	bacula-5.0.3-mysql-lib.patch
 Patch25:	bacula-5.0.3-link.patch
@@ -365,6 +369,13 @@ Requires(postun):	bacula-common
 %if %{TCPW}
 Requires:	tcp_wrappers
 %endif
+%if %{mdkversion} >= 200810
+Suggests:	mtx
+%endif
+%if %{mdkversion} >= 200910
+Suggests:	sudo
+Suggests:	smartmontools
+%endif
 
 %description	sd
 %{blurb}
@@ -468,6 +479,7 @@ The tray monitor for bacula.
 %setup -q
 %setup -q -D -T -a 5
 mv bacula-gui-%{_guiver} gui
+%patch0 -p2 -b .git
 %patch1 -p1 -b .mandriva
 %patch3 -p1 -b .updatedb
 %patch5 -p0 -b .php_header
@@ -478,18 +490,24 @@ mv bacula-gui-%{_guiver} gui
 %patch13 -p1 -b .sqlite_thread
 %patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
+%if %{mdkversion} >= 200910
+%patch16 -p1 -b .sudo_sd
+%endif
 %patch18 -p1 -b .backupdir
 %patch19 -p0 -b .openssl_linkage
 %patch20 -p1 -b .static
+%patch21 -p1 -b .bnet
 %patch22 -p1 -b .gzip
-%patch23 -p0 -b .mysql
+%if %{mdkversion} >= 201100
+%patch23 -p1 -b .mysql
+%endif
 %patch25 -p0 -b .link
 
 # fix conditional pam config file
 %if %{mdkversion} < 200610
-bzcat %{SOURCE6} > bacula.pam
+cp %{SOURCE6} bacula.pam
 %else
-bzcat %{SOURCE7} > bacula.pam
+cp %{SOURCE7} bacula.pam
 %endif
 
 %if %{TCPW}
@@ -497,7 +515,7 @@ bzcat %{SOURCE7} > bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=%{archivedir} --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=tape --with-fd-user=bacula --with-fd-group=bacula
+%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=%{archivedir} --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=tape --with-fd-user=bacula --with-fd-group=bacula --enable-batch-insert
 
 #--disable-shared --enable-static 
 # workaround fix-libtool-ltmain-from-overlinking bug
@@ -514,6 +532,9 @@ export QMAKE="%{qt4bin}/qmake"
 
 # disable FORTIFY_SOURCE http://www.mail-archive.com/bacula-devel@lists.sourceforge.net/msg01786.html
 export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
+for j in /sbin /bin /usr/sbin /usr/bin; do
+[ -x ${j}/mtx ] && export MTX=${j}/mtx
+done
 
 %if %{MYSQL}
 %configure2_5x --with-mysql \
@@ -636,6 +657,11 @@ cp scripts/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/bacula-dir
 
 install -d %{buildroot}%{working_dir}
 install -D -d %{buildroot}%{archivedir}/bacula-restores
+
+%if %{mdkversion} >= 200910
+install -d  %{buildroot}%{_sysconfdir}/sudoers.d
+install -m0440 %{SOURCE8} %{buildroot}%{_sysconfdir}/sudoers.d/bacula-sd
+%endif
 
 install -d %{buildroot}%{_sysconfdir}/security/console.apps
 install -d %{buildroot}%{_sysconfdir}/pam.d
@@ -1323,9 +1349,9 @@ rm -rf %{buildroot}
 %ghost %{script_dir}/update_bacula_tables
 %attr(0600,root,root) %ghost %{sysconf_dir}/.pw.sed
 %dir %{sysconf_dir}/scripts
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/make_catalog_backup
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/make_catalog_backup.pl
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/delete_catalog_backup
+%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/make_catalog_backup
+%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/make_catalog_backup.pl
+%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/delete_catalog_backup
 %attr(0644,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/query.sql
 
 %if %{MYSQL}
@@ -1387,10 +1413,10 @@ rm -rf %{buildroot}
 %{_sbindir}/bls
 %{_sbindir}/btape
 %dir %{sysconf_dir}/scripts
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/mtx-changer
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/mtx-changer.conf
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/disk-changer
-%attr(0754,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/dvd-handler
+%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/mtx-changer
+%attr(0644,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/mtx-changer.conf
+%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/disk-changer
+%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/dvd-handler
 %defattr(0644,root,root,0755)
 %{_mandir}/man8/bacula-sd.8*
 %{_mandir}/man8/bcopy.8*
@@ -1398,6 +1424,9 @@ rm -rf %{buildroot}
 %{_mandir}/man8/bls.8*
 %{_mandir}/man8/btape.8*
 %dir %attr(0770,bacula,bacula) %{archivedir}
+%if %{mdkversion} >= 200910
+%attr(0440,root,root) %config(noreplace) %{_sysconfdir}/sudoers.d/bacula-sd
+%endif
 
 %files console
 %defattr(0644,root,root,0755)
