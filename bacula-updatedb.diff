@@ -1,0 +1,113 @@
+diff -p -up bacula-3.0.0/updatedb/update_mysql_tables_4_to_5.updatedb bacula-3.0.0/updatedb/update_mysql_tables_4_to_5
+--- bacula-3.0.0/updatedb/update_mysql_tables_4_to_5.updatedb	2004-02-18 18:23:04.000000000 -0300
++++ bacula-3.0.0/updatedb/update_mysql_tables_4_to_5	2009-04-09 17:52:09.000000000 -0300
+@@ -37,7 +37,8 @@ ALTER TABLE Media MODIFY VolStatus  ENUM
+ 	    'Busy', 'Used') NOT NULL;
+ ALTER TABLE Media CHANGE VolMaxBytes MaxVolBytes BIGINT UNSIGNED NOT NULL;
+ 
+-UPDATE Version SET VersionId=5;
++DELETE FROM Version;
++INSERT INTO Version (VersionId) VALUES (5);
+ 
+ END-OF-DATA
+ then
+diff -p -up bacula-3.0.0/updatedb/update_mysql_tables_5_to_6.updatedb bacula-3.0.0/updatedb/update_mysql_tables_5_to_6
+--- bacula-3.0.0/updatedb/update_mysql_tables_5_to_6.updatedb	2004-02-18 18:23:04.000000000 -0300
++++ bacula-3.0.0/updatedb/update_mysql_tables_5_to_6	2009-04-09 17:52:09.000000000 -0300
+@@ -86,7 +86,8 @@ CREATE TABLE Counters (
+    PRIMARY KEY (Counter(128))
+    );
+ 
+-UPDATE Version SET VersionId=6;
++DELETE FROM Version;
++INSERT INTO Version (VersionId) VALUES (6);
+ 
+ END-OF-DATA
+ then
+diff -p -up bacula-3.0.0/updatedb/update_mysql_tables_7_to_8.updatedb bacula-3.0.0/updatedb/update_mysql_tables_7_to_8
+--- bacula-3.0.0/updatedb/update_mysql_tables_7_to_8.updatedb	2008-10-24 11:13:13.000000000 -0200
++++ bacula-3.0.0/updatedb/update_mysql_tables_7_to_8	2009-04-09 17:53:36.000000000 -0300
+@@ -9,7 +9,7 @@ echo "this script may take several minut
+ echo " "
+ bindir=/usr/bin
+ 
+-DB_VER=`$bindir/mysql $* bacula -e 'select * from Version;'|tail -n 1 2>/dev/null`
++DB_VER="`$bindir/mysql $* bacula -e 'select * from Version;'|tail -n 1 2>/dev/null`"
+ if [ -z "$DB_VER" ]; then
+        echo "Sorry, I can't seem to locate a bacula database."
+        exit 1
+diff -p -up bacula-3.0.0/updatedb/update_sqlite_tables_4_to_5.updatedb bacula-3.0.0/updatedb/update_sqlite_tables_4_to_5
+--- bacula-3.0.0/updatedb/update_sqlite_tables_4_to_5.updatedb	2004-02-18 18:23:04.000000000 -0300
++++ bacula-3.0.0/updatedb/update_sqlite_tables_4_to_5	2009-04-09 17:52:09.000000000 -0300
+@@ -9,9 +9,9 @@ echo "this script may take several minut
+ echo " "
+ 
+ # The location of the sqlite program
+-bindir=/usr/lib/sqlite
++bindir=/usr/bin
+ # The location of your bacula working directory
+-cd /var/bacula
++cd /var/lib/bacula
+ 
+ if [ -s bacula.db ];then
+ 	DB_VER=`echo "select * from Version;" | $bindir/sqlite bacula.db | tail -n 1 2>/dev/null`
+@@ -140,6 +140,7 @@ INSERT INTO Pool (
+ DROP TABLE Pool_backup;
+ COMMIT;
+ 
+-UPDATE Version SET VersionId=5;
++DELETE FROM Version;
++INSERT INTO Version (VersionId) VALUES (5);
+ 
+ END-OF-DATA
+diff -p -up bacula-3.0.0/updatedb/update_sqlite_tables_5_to_6.updatedb bacula-3.0.0/updatedb/update_sqlite_tables_5_to_6
+--- bacula-3.0.0/updatedb/update_sqlite_tables_5_to_6.updatedb	2004-02-18 18:23:04.000000000 -0300
++++ bacula-3.0.0/updatedb/update_sqlite_tables_5_to_6	2009-04-09 17:52:09.000000000 -0300
+@@ -9,9 +9,9 @@ echo "this script may take several minut
+ echo " "
+ 
+ # The location of the sqlite program
+-bindir=/usr/lib/sqlite
++bindir=/usr/bin
+ # The location of your bacula working directory
+-cd /var/bacula
++cd /var/lib/bacula
+ 
+ if [ -s bacula.db ];then
+ 	DB_VER=`echo "select * from Version;" | $bindir/sqlite bacula.db | tail -n 1 2>/dev/null`
+@@ -170,6 +170,7 @@ CREATE TABLE Counters (
+    PRIMARY KEY (Counter)
+    );
+ 
+-UPDATE Version SET VersionId=6;
++DELETE FROM Version;
++INSERT INTO Version (VersionId) VALUES (6);
+ 
+ END-OF-DATA
+diff -p -up bacula-3.0.0/updatedb/update_sqlite_tables_6_to_7.updatedb bacula-3.0.0/updatedb/update_sqlite_tables_6_to_7
+--- bacula-3.0.0/updatedb/update_sqlite_tables_6_to_7.updatedb	2004-04-09 13:59:25.000000000 -0300
++++ bacula-3.0.0/updatedb/update_sqlite_tables_6_to_7	2009-04-09 17:52:09.000000000 -0300
+@@ -9,9 +9,9 @@ echo "this script may take several minut
+ echo " "
+ 
+ # The location of the sqlite program
+-bindir=/usr/lib/sqlite
++bindir=/usr/bin
+ # The location of your bacula working directory
+-cd /var/bacula
++cd /var/lib/bacula
+ 
+ if [ -s bacula.db ];then
+         DB_VER=`echo "select * from Version;" | $bindir/sqlite bacula.db | tail -n 1 2>/dev/null`
+diff -p -up bacula-3.0.0/updatedb/update_sqlite_tables_8_to_9.updatedb bacula-3.0.0/updatedb/update_sqlite_tables_8_to_9
+--- bacula-3.0.0/updatedb/update_sqlite_tables_8_to_9.updatedb	2005-11-06 16:04:07.000000000 -0200
++++ bacula-3.0.0/updatedb/update_sqlite_tables_8_to_9	2009-04-09 17:52:09.000000000 -0300
+@@ -9,7 +9,7 @@ echo "this script may take several minut
+ echo " "
+ 
+ bindir=/usr/bin
+-cd /var/bacula/working
++cd /var/lib/bacula
+ sqlite=sqlite
+ 
+ ${bindir}/${sqlite} $* bacula.db <<END-OF-DATA

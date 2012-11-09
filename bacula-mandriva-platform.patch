@@ -1,0 +1,435 @@
+diff -p -up bacula-5.0.1/autoconf/bacula-macros/os.m4.mandriva bacula-5.0.1/autoconf/bacula-macros/os.m4
+--- bacula-5.0.1/autoconf/bacula-macros/os.m4.mandriva	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/autoconf/bacula-macros/os.m4	2010-04-11 18:34:44.380045092 +0000
+@@ -189,6 +189,9 @@ then
+ elif test -d /etc/SuSEconfig
+ then
+         DISTNAME=suse5
++elif test -f /etc/mandriva-release
++then
++        DISTNAME=mandriva
+ elif test -f /etc/mandrake-release
+ then
+         DISTNAME=mandrake
+diff -p -up bacula-5.0.1/autoconf/configure.in.mandriva bacula-5.0.1/autoconf/configure.in
+--- bacula-5.0.1/autoconf/configure.in.mandriva	2010-04-11 18:26:29.781151636 +0000
++++ bacula-5.0.1/autoconf/configure.in	2010-04-11 18:33:01.336996554 +0000
+@@ -2871,6 +2871,18 @@ redhat)
+        platforms/redhat/bacula-dir
+        "
+   ;;
++mandriva)
++   DISTVER=`cat /etc/mandriva-release | grep release |\
++      cut -f 4 -d ' '`
++   TAPEDRIVE="/dev/nst0"
++   PSCMD="ps -e -o pid,command"
++   PFILES="${PFILES} \
++       platforms/mandriva/Makefile \
++       platforms/mandriva/bacula-fd \
++       platforms/mandriva/bacula-sd \
++       platforms/mandriva/bacula-dir \
++       platforms/mandriva/sysconfig"
++  ;;
+ mandrake)
+    DISTVER=`cat /etc/mandrake-release | grep release |\
+       cut -f 5 -d ' '`
+diff -p -up bacula-5.0.1/configure.mandriva bacula-5.0.1/configure
+--- bacula-5.0.1/configure.mandriva	2010-04-11 18:26:29.785084148 +0000
++++ bacula-5.0.1/configure	2010-04-11 18:33:00.294026933 +0000
+@@ -15940,6 +15940,9 @@ then
+ elif test -d /etc/SuSEconfig
+ then
+         DISTNAME=suse5
++elif test -f /etc/mandriva-release
++then
++        DISTNAME=mandriva
+ elif test -f /etc/mandrake-release
+ then
+         DISTNAME=mandrake
+@@ -29047,6 +29050,18 @@ redhat)
+        platforms/redhat/bacula-dir
+        "
+   ;;
++mandriva)
++   DISTVER=`cat /etc/mandriva-release | grep release |\
++      cut -f 4 -d ' '`
++   TAPEDRIVE="/dev/nst0"
++   PSCMD="ps -e -o pid,command"
++   PFILES="${PFILES} \
++       platforms/mandriva/Makefile \
++       platforms/mandriva/bacula-fd \
++       platforms/mandriva/bacula-sd \
++       platforms/mandriva/bacula-dir \
++       platforms/mandriva/sysconfig"
++  ;;
+ mandrake)
+    DISTVER=`cat /etc/mandrake-release | grep release |\
+       cut -f 5 -d ' '`
+diff -p -up bacula-5.0.1/platforms/mandriva/Makefile.in.mandriva bacula-5.0.1/platforms/mandriva/Makefile.in
+--- bacula-5.0.1/platforms/mandriva/Makefile.in.mandriva	2010-04-11 18:28:19.558027576 +0000
++++ bacula-5.0.1/platforms/mandriva/Makefile.in	2010-04-11 17:03:30.481016076 +0000
+@@ -0,0 +1,100 @@
++# 
++# This file is used as the template to create the
++# Makefile for the Mandriva specific installation.
++#
++#  15 November 2001 -- Kern Sibbald
++#
++#  for Bacula release @VERSION@ (@DATE@) -- @DISTNAME@
++#
++
++INSTALL = @INSTALL@
++INSTALL_PROGRAM = @INSTALL_PROGRAM@
++
++nothing:
++
++install: install-autostart install_logrotate
++
++install-autostart: install-autostart-fd install-autostart-sd install-autostart-dir install-sysconfig
++
++install_logrotate:
++	@$(INSTALL_PROGRAM) ../../scripts/logrotate $(DESTDIR)/etc/logrotate.d/bacula-dir
++	
++install-autostart-fd:
++	@if test x$(DESTDIR) = x -a  -f /etc/rc.d/init.d/bacula-fd; then \
++	   /sbin/chkconfig --del bacula-fd; \
++	fi
++	@$(INSTALL_PROGRAM) -m 744 bacula-fd $(DESTDIR)/etc/rc.d/init.d/bacula-fd
++	# set symlinks for script at startup and shutdown
++	@if test x$(DESTDIR) = x ; then \
++	   /sbin/chkconfig --add bacula-fd; \
++	fi
++
++
++install-autostart-sd:
++	@if test x$(DESTDIR) = x -a  -f /etc/rc.d/init.d/bacula-sd; then \
++	    /sbin/chkconfig --del bacula-sd; \
++	fi
++	@$(INSTALL_PROGRAM) -m 744 bacula-sd  $(DESTDIR)/etc/rc.d/init.d/bacula-sd
++	# set symlinks for script at startup and shutdown
++	@if test x$(DESTDIR) = x ; then \
++	   /sbin/chkconfig --add bacula-sd; \
++	fi
++
++
++install-autostart-dir:
++	@if test x$(DESTDIR) = x -a  -f /etc/rc.d/init.d/bacula-dir; then \
++	    /sbin/chkconfig --del bacula-dir; \
++	fi
++	@$(INSTALL_PROGRAM) -m 744 bacula-dir  $(DESTDIR)/etc/rc.d/init.d/bacula-dir
++	# set symlinks for script at startup and shutdown
++	@if test x$(DESTDIR) = x ; then \
++	   /sbin/chkconfig --add bacula-dir; \
++	fi
++
++
++install-sysconfig:
++	@$(INSTALL_PROGRAM) -m 644 sysconfig  $(DESTDIR)/etc/sysconfig/bacula
++
++
++uninstall: uninstall-autostart uninstall-logrotate
++
++uninstall-autostart: uninstall-autostart-fd uninstall-autostart-sd uninstall-autostart-dir uninstall-sysconfig
++
++uninstall-logrotate:
++	@rm -f $(DESTDIR)/etc/logrotate.d/bacula-dir
++
++uninstall-autostart-fd:
++	@if test x$(DESTDIR) = x -a  -f /etc/rc.d/init.d/bacula-fd; then \
++	    /sbin/chkconfig --del bacula-fd; \
++	fi
++	@rm -f	$(DESTDIR)/etc/rc.d/init.d/bacula-fd
++
++
++uninstall-autostart-sd:
++	@if test x$(DESTDIR) = x -a  -f /etc/rc.d/init.d/bacula-sd; then \
++	    /sbin/chkconfig --del bacula-sd; \
++	fi
++	@rm -f	$(DESTDIR)/etc/rc.d/init.d/bacula-sd
++
++uninstall-autostart-dir:
++	@if test x$(DESTDIR) = x -a  -f /etc/rc.d/init.d/bacula-dir; then \
++	    /sbin/chkconfig --del bacula-dir; \
++	fi
++	@rm -f	$(DESTDIR)/etc/rc.d/init.d/bacula-dir
++
++uninstall-sysconfig:
++	@rm -f	$(DESTDIR)/etc/sysconfig/bacula
++
++
++clean:
++	@rm -f 1 2 3
++
++distclean: clean
++	@rm -f Makefile bacula-*.spec bacula.*.spec bacula.spec
++	@rm -f bacula-sd bacula-fd bacula-dir
++	@rm -f bacula-sysconfig
++
++devclean: clean
++	@rm -f Makefile bacula-*.spec bacula.*.spec bacula.spec
++	@rm -f bacula-sd bacula-fd bacula-dir
++	@rm -f bacula-sysconfig
+diff -p -up bacula-5.0.1/platforms/mandriva/bacula-dir.in.mandriva bacula-5.0.1/platforms/mandriva/bacula-dir.in
+--- bacula-5.0.1/platforms/mandriva/bacula-dir.in.mandriva	2010-04-11 18:28:19.559027624 +0000
++++ bacula-5.0.1/platforms/mandriva/bacula-dir.in	2010-04-11 18:21:39.710356676 +0000
+@@ -0,0 +1,74 @@
++#! /bin/sh
++#
++# bacula       This shell script takes care of starting and stopping
++#	       the bacula Director daemon
++#
++# chkconfig: 2345 90 9
++# description: It comes by night and sucks the vital essence from your computers.
++#
++#  For Bacula release @VERSION@ (@DATE@) -- @DISTNAME@
++#
++### BEGIN INIT INFO
++# Provides:                     bacula-dir
++# Required-Start:               $local_fs $network
++# Required-Stop:                $local_fs $network
++# Default-Start:                3 5
++# Default-Stop:         0 1 2 6
++# Short-Description:    bacula director
++# Description:                  Bacula network backup system director daemon
++### END INIT INFO
++
++# Source function library
++. /etc/rc.d/init.d/functions
++
++DIR_USER=@dir_user@
++DIR_GROUP=@dir_group@
++DIR_OPTIONS=''
++
++# pull in any user defined DIR_OPTIONS, DIR_USER, or DIR_GROUP
++[ -f /etc/sysconfig/bacula ] && . /etc/sysconfig/bacula
++
++DIR_PORT=`grep -i '^[[:space:]]*DIRPort' /etc/bacula/bacula-dir.conf |sed -e 's/^.*=[[:space:]]*\([0-9]*\).*$/\1/'`
++PIDFILE=@piddir@/bacula-dir.${DIR_PORT:-@dir_port@}.pid
++OLDPIDFILE=@piddir@/bacula-dir.pid
++
++RETVAL=0
++case "$1" in
++    start)
++	if [ "${DIR_USER}" != '' ]; then
++	    DIR_OPTIONS="${DIR_OPTIONS} -u ${DIR_USER}"
++	fi
++	if [ "${DIR_GROUP}" != '' ]; then
++	    DIR_OPTIONS="${DIR_OPTIONS} -g ${DIR_GROUP}"
++	fi
++	echo -n "Starting the Bacula Director: "
++	daemon --pidfile=$PIDFILE @sbindir@/bacula-dir ${DIR_OPTIONS} -c @sysconfdir@/bacula-dir.conf
++	RETVAL=$?
++	echo
++	[ $RETVAL -eq 0 ] && touch @subsysdir@/bacula-dir
++	;;
++    stop)
++	echo -n "Stopping the Director daemon: "
++	[ -e $OLDPIDFILE ] && killproc -p $OLDPIDFILE @sbindir@/bacula-dir
++	killproc -p $PIDFILE @sbindir@/bacula-dir
++	RETVAL=$?
++	echo
++	[ $RETVAL -eq 0 ] && rm -f @subsysdir@/bacula-dir
++	;;
++    restart)
++	$0 stop
++	sleep 5
++	$0 start
++	;;
++    condrestart)
++    	[ -f @subsysdir@/bacula-dir ] && $0 restart
++	;;
++    status)
++	status -p $PIDFILE @sbindir@/bacula-dir
++	;;
++    *)
++	echo "Usage: $0 {start|stop|restart|status}"
++	exit 1
++	;;
++esac
++exit 0
+diff -p -up bacula-5.0.1/platforms/mandriva/bacula-fd.in.mandriva bacula-5.0.1/platforms/mandriva/bacula-fd.in
+--- bacula-5.0.1/platforms/mandriva/bacula-fd.in.mandriva	2010-04-11 18:28:19.560027328 +0000
++++ bacula-5.0.1/platforms/mandriva/bacula-fd.in	2010-04-11 18:21:55.590109440 +0000
+@@ -0,0 +1,82 @@
++#! /bin/sh
++#
++# bacula       This shell script takes care of starting and stopping
++#	       the bacula File daemon.
++#
++# chkconfig: 2345 90 9
++# description: It comes by night and sucks the vital essence from your computers.
++#
++#  For Bacula release @VERSION@ (@DATE@) -- @DISTNAME@
++#
++### BEGIN INIT INFO
++# Provides:			bacula-fd
++# Required-Start:		$local_fs $network
++# Required-Stop:		$local_fs $network
++# Default-Start:		3 5
++# Default-Stop: 	0 1 2 6
++# Short-Description:	bacula file daemon
++# Description:			Bacula network backup system file daemon
++### END INIT INFO
++
++# Source function library
++. /etc/rc.d/init.d/functions
++
++FD_USER=@fd_user@
++FD_GROUP=@fd_group@
++FD_KEEP_READALL=yes
++FD_OPTIONS=''
++FD_IONICE=''
++
++# pull in any user defined FD_OPTIONS, FD_USER, or FD_GROUP
++[ -f /etc/sysconfig/bacula ] && . /etc/sysconfig/bacula
++
++FD_PORT=`grep -i '^[[:space:]]*FDPort' /etc/bacula/bacula-fd.conf |sed -e 's/^.*=[[:space:]]*\([0-9]*\).*$/\1/'`
++PIDFILE=@piddir@/bacula-fd.${FD_PORT:-@fd_port@}.pid
++OLDPIDFILE=@piddir@/bacula-fd.pid
++
++case "$1" in
++    start)
++	if [ "${FD_USER}" != '' ]; then
++	    FD_OPTIONS="${FD_OPTIONS} -u ${FD_USER}"
++	    case "$FD_KEEP_READALL" in
++		[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee]) FD_OPTIONS="${FD_OPTIONS} -k" ;;
++	    esac
++	fi
++	if [ "${FD_GROUP}" != '' ]; then
++	    FD_OPTIONS="${FD_OPTIONS} -g ${FD_GROUP}"
++	fi
++	if [ -n "$FD_IONICE" -a -x /usr/bin/ionice ]; then
++	    IONICE="/usr/bin/ionice $FD_IONICE"
++	fi
++
++	echo -n "Starting the Bacula File daemon: "
++	daemon --pidfile=$PIDFILE $IONICE @sbindir@/bacula-fd $FD_OPTIONS -c @sysconfdir@/bacula-fd.conf
++	RETVAL=$?
++	echo
++	[ $RETVAL -eq 0 ] && touch @subsysdir@/bacula-fd
++	;;
++    stop)
++	echo -n "Stopping the Bacula File daemon: "
++	[ -e $OLDPIDFILE ] && killproc -p $OLDPIDFILE @sbindir@/bacula-fd
++	killproc -p $PIDFILE @sbindir@/bacula-fd
++	RETVAL=$?
++	echo
++	[ $RETVAL -eq 0 ] && rm -f @subsysdir@/bacula-fd
++	;;
++    restart)
++	$0 stop
++	sleep 5
++	$0 start
++	;;
++    condrestart)
++    	[ -f @subsysdir@/bacula-fd ] && $0 restart
++	;;
++    status)
++	status -p $PIDFILE @sbindir@/bacula-fd
++	;;
++    *)
++	echo "Usage: $0 {start|stop|restart|status}"
++	exit 1
++	;;
++esac
++exit 0
+diff -p -up bacula-5.0.1/platforms/mandriva/bacula-sd.in.mandriva bacula-5.0.1/platforms/mandriva/bacula-sd.in
+--- bacula-5.0.1/platforms/mandriva/bacula-sd.in.mandriva	2010-04-11 18:28:19.561027323 +0000
++++ bacula-5.0.1/platforms/mandriva/bacula-sd.in	2010-04-11 18:22:19.395131581 +0000
+@@ -0,0 +1,73 @@
++#! /bin/sh
++#
++# bacula       This shell script takes care of starting and stopping
++#	       the bacula Storage daemon.
++#
++# chkconfig: 2345 90 9
++# description: It comes by night and sucks the vital essence from your computers.
++#
++#  For Bacula release @VERSION@ (@DATE@) -- @DISTNAME@
++#
++### BEGIN INIT INFO
++# Provides:			bacula-sd
++# Required-Start:		$local_fs $network
++# Required-Stop:		$local_fs $network
++# Default-Start:		3 5
++# Default-Stop: 	0 1 2 6
++# Short-Description:	bacula storage daemon
++# Description:			Bacula network backup system storage daemon
++### END INIT INFO
++
++# Source function library
++. /etc/rc.d/init.d/functions
++
++SD_USER=@sd_user@
++SD_GROUP=@sd_group@
++SD_OPTIONS=''
++
++# pull in any user defined SD_OPTIONS, SD_USER, or SD_GROUP
++[ -f /etc/sysconfig/bacula ] && . /etc/sysconfig/bacula
++
++SD_PORT=`grep -i '^[[:space:]]*SDPort' /etc/bacula/bacula-sd.conf |sed -e 's/^.*=[[:space:]]*\([0-9]*\).*$/\1/'`
++PIDFILE=@piddir@/bacula-sd.${SD_PORT:-@sd_port@}.pid
++OLDPIDFILE=@piddir@/bacula-sd.pid
++
++case "$1" in
++    start)
++	if [ "${SD_USER}" != '' ]; then
++		SD_OPTIONS="${SD_OPTIONS} -u ${SD_USER}"
++	fi
++	if [ "${SD_GROUP}" != '' ]; then
++		SD_OPTIONS="${SD_OPTIONS} -g ${SD_GROUP}"
++	fi
++
++	echo -n "Starting the Bacula Storage daemon: "
++	daemon --pidfile=$PIDFILE @sbindir@/bacula-sd $SD_OPTIONS -c @sysconfdir@/bacula-sd.conf
++	RETVAL=$?
++	echo
++	[ $RETVAL -eq 0 ] && touch @subsysdir@/bacula-sd
++	;;
++    stop)
++	echo -n "Stopping the Bacula Storage daemon: "
++	[ -e $OLDPIDFILE ] && killproc -p $OLDPIDFILE @sbindir@/bacula-sd
++	killproc -p $PIDFILE @sbindir@/bacula-sd
++	RETVAL=$?
++	echo
++	[ $RETVAL -eq 0 ] && rm -f @subsysdir@/bacula-sd
++	;;
++    restart)
++	$0 stop
++	sleep 5
++	$0 start
++	;;
++    condrestart)
++    	[ -f @subsysdir@/bacula-sd ] && $0 restart
++	;;
++    status)
++	status -p $PIDFILE @sbindir@/bacula-sd
++	;;
++    *)
++	echo "Usage: $0 {start|stop|restart|status}"
++	exit 1
++	;;
++esac
++exit 0
+diff -p -up bacula-5.0.1/platforms/mandriva/sysconfig.in.mandriva bacula-5.0.1/platforms/mandriva/sysconfig.in
+--- bacula-5.0.1/platforms/mandriva/sysconfig.in.mandriva	2010-04-11 18:28:19.562027263 +0000
++++ bacula-5.0.1/platforms/mandriva/sysconfig.in	2010-04-11 17:02:53.584109858 +0000
+@@ -0,0 +1,18 @@
++# bacula director options
++DIR_USER=@dir_user@
++DIR_GROUP=@dir_group@
++DIR_OPTIONS=''
++
++# bacula client options
++FD_USER=@fd_user@
++FD_GROUP=@fd_group@
++FD_OPTIONS=''
++# when running bacula client under an unprivileged user allow it to read every file it has to backup
++FD_KEEP_READALL=yes
++# if bacula takes up too much resources when running backups on a busy server try setting this to '-c3'
++FD_IONICE=''
++
++# bacula storage daemon options
++SD_USER=@sd_user@
++SD_GROUP=@sd_group@
++SD_OPTIONS=''

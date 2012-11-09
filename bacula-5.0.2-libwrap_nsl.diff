@@ -1,0 +1,24 @@
+diff -p -up bacula-5.0.2/autoconf/configure.in.wrap bacula-5.0.2/autoconf/configure.in
+--- bacula-5.0.2/autoconf/configure.in.wrap	2010-06-14 08:19:21.449360410 +0000
++++ bacula-5.0.2/autoconf/configure.in	2010-06-14 08:19:21.479289510 +0000
+@@ -1092,7 +1092,7 @@ AC_ARG_WITH(tcp-wrappers,
+ 		      AC_DEFINE(HAVE_LIBWRAP, 1, [Set to enable libwraper support])
+ 		      TCPW_MSG="yes" 
+ 		      LIBS="$saved_LIBS"
+-		      WRAPLIBS="-lwrap"
++		      WRAPLIBS="-lwrap -lnsl"
+ 		   ], [
+ 		      AC_MSG_ERROR([*** libwrap missing])
+ 		   ]
+diff -p -up bacula-5.0.2/configure.wrap bacula-5.0.2/configure
+--- bacula-5.0.2/configure.wrap	2010-06-14 08:19:21.000000000 +0000
++++ bacula-5.0.2/configure	2010-06-14 08:21:48.529368530 +0000
+@@ -27006,7 +27006,7 @@ _ACEOF
+ 
+ 		      TCPW_MSG="yes"
+ 		      LIBS="$saved_LIBS"
+-		      WRAPLIBS="-lwrap"
++		      WRAPLIBS="-lwrap -lnsl"
+ 
+ else
+ 

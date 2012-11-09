@@ -1,0 +1,11 @@
+diff -p -up bacula-3.0.2/src/dird/bacula-dir.conf.in.backupdir bacula-3.0.2/src/dird/bacula-dir.conf.in
+--- bacula-3.0.2/src/dird/bacula-dir.conf.in.backupdir	2009-07-22 11:10:18.000000000 -0300
++++ bacula-3.0.2/src/dird/bacula-dir.conf.in	2009-07-22 11:12:08.000000000 -0300
+@@ -111,6 +111,7 @@ FileSet {
+ #    disk storage during initial testing.
+ #
+     File = @sbindir@
++    File = @sysconfdir@
+   }
+ 
+ #

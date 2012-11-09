@@ -1,0 +1,31 @@
+diff -p -up bacula-5.0.1/manpages/Makefile.in.gzip bacula-5.0.1/manpages/Makefile.in
+--- bacula-5.0.1/manpages/Makefile.in.gzip	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/manpages/Makefile.in	2010-04-11 21:41:53.165016866 +0000
+@@ -21,23 +21,19 @@ depend:
+ install:
+ 	$(MKDIR) $(DESTDIR)/$(mandir)/man8
+ 	for I in ${MAN8}; \
+-	  do ($(RMF) $$I.gz; gzip -c $$I >$$I.gz; \
+-	     $(INSTALL_DATA) $$I.gz $(DESTDIR)$(mandir)/man8/$$I.gz; \
+-	     rm -f $$I.gz); \
++	  do $(INSTALL_DATA) $$I $(DESTDIR)$(mandir)/man8/$$I; \
+ 	done
+ 	$(MKDIR) $(DESTDIR)/$(mandir)/man1
+ 	for I in ${MAN1}; \
+-	  do ($(RMF) $$I.gz; gzip -c $$I >$$I.gz; \
+-	     $(INSTALL_DATA) $$I.gz $(DESTDIR)$(mandir)/man1/$$I.gz; \
+-	     rm -f $$I.gz); \
++	  do $(INSTALL_DATA) $$I $(DESTDIR)$(mandir)/man1/$$I; \
+ 	done
+ 
+ uninstall:
+ 	for I in ${MAN8}; \
+-	  do (rm -f $(DESTDIR)$(mandir)/man8/$$I.gz); \
++	  do (rm -f $(DESTDIR)$(mandir)/man8/$$I); \
+ 	done
+ 	for I in ${MAN1}; \
+-	  do (rm -f $(DESTDIR)$(mandir)/man1/$$I.gz); \
++	  do (rm -f $(DESTDIR)$(mandir)/man1/$$I); \
+ 	done
+ 
+ clean:

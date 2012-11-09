@@ -1,0 +1,8 @@
+--- gui/bacula-web/external_packages/smarty_gettext-0.9/tsmarty2c.php	2005-06-15 16:59:12.000000000 +0200
++++ gui/bacula-web/external_packages/smarty_gettext-0.9/tsmarty2c.php.oden	2007-09-03 15:31:51.000000000 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/php -qn
++#!/usr/bin/php -qn
+ <?php
+ /**
+  * tsmarty2c.php - rips gettext strings from smarty template

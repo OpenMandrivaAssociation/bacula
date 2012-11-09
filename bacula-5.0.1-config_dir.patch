@@ -1,0 +1,132 @@
+diff -p -up bacula-5.0.1/src/console/console.c.config bacula-5.0.1/src/console/console.c
+--- bacula-5.0.1/src/console/console.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/console/console.c	2010-04-11 19:25:14.319676058 +0000
+@@ -119,7 +119,7 @@ static int eolcmd(FILE *input, BSOCK *UA
+ #endif
+ 
+ 
+-#define CONFIG_FILE "bconsole.conf"   /* default configuration file */
++#define CONFIG_FILE CONFIG_DIR "/bconsole.conf"   /* default configuration file */
+ 
+ static void usage()
+ {
+diff -p -up bacula-5.0.1/src/dird/dird.c.config bacula-5.0.1/src/dird/dird.c
+--- bacula-5.0.1/src/dird/dird.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/dird/dird.c	2010-04-11 19:25:18.665246791 +0000
+@@ -101,7 +101,7 @@ typedef enum {
+ } cat_op;
+ static bool check_catalog(cat_op mode);
+ 
+-#define CONFIG_FILE "bacula-dir.conf" /* default configuration file */
++#define CONFIG_FILE CONFIG_DIR "/bacula-dir.conf" /* default configuration file */
+ 
+ 
+ static void usage()
+diff -p -up bacula-5.0.1/src/filed/filed.c.config bacula-5.0.1/src/filed/filed.c
+diff -p -up bacula-5.0.1/src/host.h.in.config bacula-5.0.1/src/host.h.in
+--- bacula-5.0.1/src/host.h.in.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/host.h.in	2010-04-11 19:21:19.623109492 +0000
+@@ -34,6 +34,7 @@
+ #define BACULA   "@BACULA@"
+ #define DISTNAME "@DISTNAME@"
+ #define DISTVER  "@DISTVER@"
++#define CONFIG_DIR  "@sysconfdir@"
+ #ifdef HAVE_WIN32
+ #define HELPDIR   "c://Program Files//Bacula//help"
+ #else
+diff -p -up bacula-5.0.1/src/qt-console/main.cpp.config bacula-5.0.1/src/qt-console/main.cpp
+--- bacula-5.0.1/src/qt-console/main.cpp.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/qt-console/main.cpp	2010-04-11 19:24:39.015653881 +0000
+@@ -49,7 +49,7 @@ extern bool parse_bat_config(CONFIG *con
+ extern void message_callback(int /* type */, char *msg);
+ 
+ 
+-#define CONFIG_FILE "bat.conf"     /* default configuration file */
++#define CONFIG_FILE CONFIG_DIR "/bat.conf"   /* default configuration file */
+ 
+ /* Static variables */
+ static CONFIG *config;
+diff -p -up bacula-5.0.1/src/stored/bcopy.c.config bacula-5.0.1/src/stored/bcopy.c
+--- bacula-5.0.1/src/stored/bcopy.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/stored/bcopy.c	2010-04-11 19:21:56.323521902 +0000
+@@ -61,7 +61,7 @@ static DEV_BLOCK *out_block;
+ static SESSION_LABEL sessrec;
+ 
+ static CONFIG *config;
+-#define CONFIG_FILE "bacula-sd.conf"
++#define CONFIG_FILE CONFIG_DIR "/bacula-sd.conf"
+ char *configfile = NULL;
+ STORES *me = NULL;                    /* our Global resource */
+ bool forge_on = false;                /* proceed inspite of I/O errors */
+diff -p -up bacula-5.0.1/src/stored/bextract.c.config bacula-5.0.1/src/stored/bextract.c
+--- bacula-5.0.1/src/stored/bextract.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/stored/bextract.c	2010-04-11 19:23:12.888229305 +0000
+@@ -65,7 +65,7 @@ static uint32_t wsize;                /*
+ static uint64_t fileAddr = 0;         /* file write address */
+ 
+ static CONFIG *config;
+-#define CONFIG_FILE "bacula-sd.conf"
++#define CONFIG_FILE CONFIG_DIR "/bacula-sd.conf"
+ char *configfile = NULL;
+ STORES *me = NULL;                    /* our Global resource */
+ bool forge_on = false;
+diff -p -up bacula-5.0.1/src/stored/bls.c.config bacula-5.0.1/src/stored/bls.c
+--- bacula-5.0.1/src/stored/bls.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/stored/bls.c	2010-04-11 19:23:02.131290962 +0000
+@@ -60,7 +60,7 @@ static uint32_t num_files = 0;
+ static ATTR *attr;
+ static CONFIG *config;
+ 
+-#define CONFIG_FILE "bacula-sd.conf"
++#define CONFIG_FILE CONFIG_DIR "/bacula-sd.conf"
+ char *configfile = NULL;
+ STORES *me = NULL;                    /* our Global resource */
+ bool forge_on = false;
+diff -p -up bacula-5.0.1/src/stored/bscan.c.config bacula-5.0.1/src/stored/bscan.c
+--- bacula-5.0.1/src/stored/bscan.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/stored/bscan.c	2010-04-11 19:22:49.950154266 +0000
+@@ -102,7 +102,7 @@ static int num_media = 0;
+ static int num_files = 0;
+ 
+ static CONFIG *config;
+-#define CONFIG_FILE "bacula-sd.conf"
++#define CONFIG_FILE CONFIG_DIR "/bacula-sd.conf"
+ char *configfile = NULL;
+ STORES *me = NULL;                    /* our Global resource */
+ bool forge_on = false;                /* proceed inspite of I/O errors */
+diff -p -up bacula-5.0.1/src/stored/btape.c.config bacula-5.0.1/src/stored/btape.c
+--- bacula-5.0.1/src/stored/btape.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/stored/btape.c	2010-04-11 19:22:16.092031281 +0000
+@@ -104,7 +104,7 @@ static bool do_unfill();
+ 
+ /* Static variables */
+ static CONFIG *config;
+-#define CONFIG_FILE "bacula-sd.conf"
++#define CONFIG_FILE CONFIG_DIR "/bacula-sd.conf"
+ char *configfile = NULL;
+ 
+ #define MAX_CMD_ARGS 30
+diff -p -up bacula-5.0.1/src/stored/stored.c.config bacula-5.0.1/src/stored/stored.c
+--- bacula-5.0.1/src/stored/stored.c.config	2010-02-24 15:33:48.000000000 +0000
++++ bacula-5.0.1/src/stored/stored.c	2010-04-11 19:22:58.663734738 +0000
+@@ -69,7 +69,7 @@ static void cleanup_old_files();
+ 
+ extern "C" void *device_initialization(void *arg);
+ 
+-#define CONFIG_FILE "bacula-sd.conf"  /* Default config file */
++#define CONFIG_FILE CONFIG_DIR "/bacula-sd.conf"  /* Default config file */
+ 
+ /* Global variables exported */
+ char OK_msg[]   = "3000 OK\n";
+diff -p -up bacula-5.0.1/src/tray-monitor/tray-monitor.c.config bacula-5.0.1/src/tray-monitor/tray-monitor.c
+--- bacula-5.0.1/src/tray-monitor/tray-monitor.c.config	2010-04-11 18:26:29.791050632 +0000
++++ bacula-5.0.1/src/tray-monitor/tray-monitor.c	2010-04-11 19:24:53.449529447 +0000
+@@ -105,7 +105,7 @@ static gboolean blinkstate = TRUE;
+ 
+ PangoFontDescription *font_desc = NULL;
+ 
+-#define CONFIG_FILE "./tray-monitor.conf"   /* default configuration file */
++#define CONFIG_FILE CONFIG_DIR "/tray-monitor.conf"   /* default configuration file */
+ 
+ static void usage()
+ {

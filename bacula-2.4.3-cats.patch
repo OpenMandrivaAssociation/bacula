@@ -1,0 +1,24 @@
+--- bacula-2.4.3/src/cats/make_catalog_backup.in	2007-10-22 14:47:58.000000000 -0700
++++ bacula-2.4.3/src/cats/make_catalog_backup.in.new	2008-12-27 13:39:58.000000000 -0800
+@@ -21,10 +21,10 @@
+ 
+ cd @working_dir@
+ rm -f $1.sql
+-if test xsqlite = x@DB_TYPE@ ; then
++if test -x @sbindir@/bacula-dir-sqlite; then
+   echo ".dump" | ${BINDIR}/sqlite $1.db >$1.sql
+ else
+-  if test xmysql = x@DB_TYPE@ ; then
++  if test -x @sbindir@/bacula-dir-mysql; then
+     if test $# -gt 2; then
+       MYSQLPASSWORD=" --password=$3"
+     else
+@@ -37,7 +37,7 @@
+     fi
+     ${BINDIR}/mysqldump -u ${2}${MYSQLPASSWORD}${MYSQLHOST} -f --opt $1 >$1.sql
+   else			      
+-    if test xpostgresql = x@DB_TYPE@ ; then
++    if test -x @sbindir@/bacula-dir-postgresql; then
+       if test $# -gt 2; then
+ 	PGPASSWORD=$3
+ 	export PGPASSWORD

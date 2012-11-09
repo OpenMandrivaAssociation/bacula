@@ -1,0 +1,11 @@
+--- src/lib/Makefile.in	2010-08-05 16:29:51.000000000 +0200
++++ src/lib/Makefile.in.oden	2011-01-03 19:28:41.089529359 +0100
+@@ -119,7 +119,7 @@
+ 
+ libbac.la: Makefile $(LIBBAC_LOBJS)
+ 	@echo "Making $@ ..."
+-	$(LIBTOOL_LINK) $(CXX) $(DEFS) $(DEBUG) $(LDFLAGS) -o $@ $(LIBBAC_LOBJS) -export-dynamic -rpath $(libdir) -release $(LIBBAC_LT_RELEASE) $(WRAPLIBS) $(CAP_LIBS) $(ZLIBS)
++	$(LIBTOOL_LINK) $(CXX) $(DEFS) $(DEBUG) $(LDFLAGS) -o $@ $(LIBBAC_LOBJS) -export-dynamic -rpath $(libdir) -release $(LIBBAC_LT_RELEASE) $(OPENSSL_LIBS) $(WRAPLIBS) $(CAP_LIBS) $(ZLIBS)
+ 
+ libbaccfg.a: $(LIBBACCFG_OBJS) 
+ 	@echo "Making $@ ..."

@@ -1,0 +1,6 @@
+sources:
+  "bacula-5.0.3.tar.gz:"	4ced1c4f8984a063a1134b59968d163243017611
+  "bacula-gui-5.0.3.tar.gz:"	902260d9ef5c379f4eb003ff7c5cd39c7c93ce1e
+  "bacula.pam:"	840adbd85ce07f5dbd7656e61ec4113866099241
+  "bacula.pam-0.77:"	5bccf8b4c2c037b44efaa938d0eb9ff7e134234f
+  "bacula-sudoers:"	ab2e7f5c410c62a630e2edc204d3029d9211b204
