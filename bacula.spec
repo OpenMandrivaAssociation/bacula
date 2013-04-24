@@ -209,7 +209,7 @@ Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	postgresql
 Suggests:	postgresql-server
-BuildRequires:	postgresql9.0-devel
+BuildRequires:	postgresql-devel >= 9.0
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post): rpm-helper
