@@ -1,7 +1,7 @@
 # required to build 3.0.0 correctly
 # those two are required to build on 2009.1+
 %define _disable_ld_no_undefined 1
-%define _requires_exceptions perl(Bbase)
+%define __noautoreq 'perl\\(Bbase\\)'
 %define _disable_libtoolize 1
 
 %define name bacula
@@ -43,11 +43,6 @@
 %{?_with_tray: %{expand: %%global TRAY 1}}
 %{?_without_tray: %{expand: %%global TRAY 0}}
 
-%if %mdkversion <= 200700
-%define BAT 0
-%define TRAY 0
-%endif
-
 %define blurb Bacula - It comes by night and sucks the vital essence from your computers.
 
 # fixes passwords in configuration files
@@ -58,7 +53,7 @@
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
 Version:	5.0.3
-Release:	%mkrel 3
+Release:	5
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
@@ -92,7 +87,7 @@ BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
 BuildRequires:	gettext-devel
-BuildRequires:	libacl-devel
+BuildRequires:	acl-devel
 BuildRequires:	mkisofs
 BuildRequires:	mtx
 BuildRequires:	pkgconfig
@@ -104,13 +99,8 @@ BuildRequires: 	python-devel
 BuildRequires:	tcp_wrappers-devel
 Requires:	tcp_wrappers
 %endif
-%if %{mdkversion} >= 200800
 BuildRequires:	imagemagick
-%else
-BuildRequires:	ImageMagick
-%endif
 BuildRequires:	libtool
-Buildroot:	%{_tmppath}/bacula-%{version}-%{release}-buildroot
 
 %description
 %{blurb}
@@ -172,9 +162,7 @@ Requires:	bacula-common = %{epoch}:%{version}-%{release}
 %if %{TCPW}
 Requires:	tcp_wrappers
 %endif
-%if %{mdkversion} >= 200810
 Suggests:	mail-server
-%endif
 
 %description	dir-common
 %{blurb}
@@ -193,9 +181,7 @@ all Jobs run, and all Files saved.
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	mysql-client
-%if %{mdkversion} >= 200810
 Suggests:	mysql
-%endif
 BuildRequires:	mysql-devel >= 3.23
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
@@ -222,22 +208,8 @@ This build requires MySQL to be installed separately as the catalog database.
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
 Requires:	postgresql
-%if %{mdkversion} >= 200810
 Suggests:	postgresql-server
-%endif
-%if %{mdkversion} < 200810
-BuildRequires:	postgresql-devel
-%else
-%if %{mdkversion} < 201000
-BuildRequires:	postgresql8.3-devel
-%else
-%if %{mdkversion} < 201100
-BuildRequires:	postgresql8.4-devel
-%else
 BuildRequires:	postgresql9.0-devel
-%endif
-%endif
-%endif
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post): rpm-helper
@@ -254,7 +226,8 @@ maintaining the file indexes and volume databases for all files backed up.
 The Catalog services permit the System Administrator or user to quickly locate
 and restore any desired file, since it maintains a record of all Volumes used,
 all Jobs run, and all Files saved.
-This build requires Postgres to be installed separately as the catalog database.
+This build requires Postgres to be installed separately as the catalog
+database.
 %endif
 
 #--- sqlite3
@@ -325,7 +298,8 @@ Group:		Archiving/Backup
 BuildRequires:	qt4-devel >= 4.2
 BuildRequires:	libqwt-devel >= 5.0.2
 Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	usermode, usermode-consoleonly
+Requires:	usermode
+Requires:	usermode-consoleonly
 
 %description	bat
 %{blurb}
@@ -369,13 +343,9 @@ Requires(postun):	bacula-common
 %if %{TCPW}
 Requires:	tcp_wrappers
 %endif
-%if %{mdkversion} >= 200810
 Suggests:	mtx
-%endif
-%if %{mdkversion} >= 200910
 Suggests:	sudo
 Suggests:	smartmontools
-%endif
 
 %description	sd
 %{blurb}
@@ -490,25 +460,17 @@ mv bacula-gui-%{_guiver} gui
 %patch13 -p1 -b .sqlite_thread
 %patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
-%if %{mdkversion} >= 200910
 %patch16 -p1 -b .sudo_sd
-%endif
 %patch18 -p1 -b .backupdir
 %patch19 -p0 -b .openssl_linkage
 %patch20 -p1 -b .static
 %patch21 -p1 -b .bnet
 %patch22 -p1 -b .gzip
-%if %{mdkversion} >= 201100
 %patch23 -p1 -b .mysql
-%endif
 %patch25 -p0 -b .link
 
 # fix conditional pam config file
-%if %{mdkversion} < 200610
-cp %{SOURCE6} bacula.pam
-%else
 cp %{SOURCE7} bacula.pam
-%endif
 
 %if %{TCPW}
 %define _configure_tcpw --with-tcp-wrappers
@@ -612,8 +574,6 @@ done
 %endif
 
 %install
-rm -rf %{buildroot}
-
 # do not use %%makeinstall here
 %makeinstall_std dir_user= dir_group=
 
@@ -658,10 +618,8 @@ cp scripts/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/bacula-dir
 install -d %{buildroot}%{working_dir}
 install -D -d %{buildroot}%{archivedir}/bacula-restores
 
-%if %{mdkversion} >= 200910
 install -d  %{buildroot}%{_sysconfdir}/sudoers.d
 install -m0440 %{SOURCE8} %{buildroot}%{_sysconfdir}/sudoers.d/bacula-sd
-%endif
 
 install -d %{buildroot}%{_sysconfdir}/security/console.apps
 install -d %{buildroot}%{_sysconfdir}/pam.d
@@ -678,11 +636,6 @@ ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bconsole
 
 # install the menu stuff
 %if %{WXWINDOWS} || %{BAT} || %{GUI}
-
-%if %mdkversion <= 200700
-install -d %{buildroot}%{_menudir}
-%endif
-
 install -d %{buildroot}%{_iconsdir}
 install -d %{buildroot}%{_miconsdir}
 install -d %{buildroot}%{_liconsdir}
@@ -695,18 +648,6 @@ convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/bacula.png
 %endif
 
 %if %{WXWINDOWS}
-
-%if %mdkversion <= 200700
-cat << EOF > %{buildroot}%{_menudir}/bacula-console-wx
-?package(bacula-console-wx): \
-command="%{_bindir}/bwx-console" \
-icon="bacula.png" \
-needs="x11" \
-title="Bacula Console (wxWindows)" \
-longtitle="Bacula Director Console" \
-section="System/Archiving/Backup"
-EOF
-%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -739,18 +680,6 @@ convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdi
 convert src/qt-console/images/bat_icon.png -resize 32x32 %{buildroot}%{_iconsdir}/bacula-bat.png
 convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdir}/bacula-bat.png
 
-%if %mdkversion <= 200700
-cat << EOF > %{buildroot}%{_menudir}/bacula-bat
-?package(bacula-bat): \
-command="%{_bindir}/bat" \
-icon="bacula-bat.png" \
-needs="x11" \
-title="Bacula Administration Tool" \
-longtitle="Bacula Administration Too" \
-section="System/Archiving/Backup"
-EOF
-%endif
-
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
 cat > %{buildroot}%{_datadir}/applications/mandriva-bacula-bat.desktop << EOF
@@ -774,18 +703,6 @@ ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bat
 %endif
 
 %if %{TRAY}
-
-%if %mdkversion <= 200700
-cat << EOF > %{buildroot}%{_menudir}/bacula-tray-monitor
-?package(bacula-tray-monitor): \
-command="%{_bindir}/bacula-tray-monitor" \
-icon="bacula.png" \
-needs="x11" \
-title="Bacula Tray Monitor" \
-longtitle="Bacula Tray Monitor" \
-section="System/Archiving/Backup"
-EOF
-%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -850,18 +767,6 @@ rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 convert gui/brestore/brestore.png -resize 16x16 %{buildroot}%{_miconsdir}/brestore.png
 convert gui/brestore/brestore.png -resize 32x32 %{buildroot}%{_iconsdir}/brestore.png
 convert gui/brestore/brestore.png -resize 48x48 %{buildroot}%{_liconsdir}/brestore.png
-
-%if %mdkversion <= 200700
-cat << EOF > %{buildroot}%{_menudir}/bacula-gui-brestore
-?package(bacula-gui-brestore): \
-command="%{_bindir}/brestore" \
-icon="brestore.png" \
-needs="x11" \
-title="Bacula Restoration GUI" \
-longtitle="Bacula Restoration GUI" \
-section="System/Archiving/Backup"
-EOF
-%endif
 
 # XDG menu
 install -d %{buildroot}%{_datadir}/applications
@@ -1235,52 +1140,20 @@ fi
 
 %post console-wx
 %post_fix_config bwx-console
-%if %mdkversion < 200900
-%update_menus
-%endif
-
-%if %mdkversion < 200900
-%postun console-wx
-%clean_menus
-%endif
 %endif
 
 %if %{BAT}
 %post bat
 %post_fix_config bat
-%if %mdkversion < 200900
-%update_menus
-%endif
-
-%if %mdkversion < 200900
-%postun bat
-%clean_menus
-%endif
 %endif
 
 %if %{GUI}
 %post gui-brestore
-%if %mdkversion < 200900
-%update_menus
-%endif
-
-%if %mdkversion < 200900
-%postun gui-brestore
-%clean_menus
-%endif
 %endif
 
 %if %{TRAY}
 %post tray-monitor
 %post_fix_config tray-monitor
-%if %mdkversion < 200900
-%update_menus
-%endif
-
-%if %mdkversion < 200900
-%postun tray-monitor
-%clean_menus
-%endif
 %endif
 
 #%post -n nagios-check_bacula
@@ -1290,9 +1163,6 @@ fi
 #if [ "$1" = "0" ]; then
 #    %{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
 #fi
-
-%clean
-rm -rf %{buildroot}
 
 %files -n %mklibname bacula
 %defattr(0755,root,root,0755)
