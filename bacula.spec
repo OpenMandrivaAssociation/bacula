@@ -266,11 +266,7 @@ Summary:	Bacula Console
 Group:		Archiving/Backup
 Requires:	bacula-common = %{epoch}:%{version}-%{release}
 BuildRequires:	readline-devel
-
-# main staff to be fixed
-BuildRequires:	%{_lib}termcap-devel
-#
-
+BuildRequires:	ncurses-devel
 Requires:	usermode-consoleonly
 
 %description	console
