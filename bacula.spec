@@ -433,7 +433,7 @@ brestore is a file restore interface
 %package	tray-monitor
 Summary:	Bacula Tray Monitor
 Group:		Archiving/Backup
-BuildRequires:	gtk2-devel >= 2.4
+BuildRequires:	pkgconfig(gtk+-2.0)
 Requires:	bacula-common = %{epoch}:%{version}-%{release}
 Requires:	usermode, usermode-consoleonly
 
