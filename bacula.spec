@@ -10,6 +10,8 @@
 
 %define _cur_db_ver 12
 
+%define baculalibname %mklibname bacula %{_guiver}
+
 # (eugeni) starting with 5.0.0, bacula dropped sqlite2 support
 # in order to be able to compile everything in one run, sqlite3 support
 # became mandatory now
@@ -103,11 +105,11 @@ easy to use and efficient, while offering many advanced storage management
 features that make it easy to find and recover lost or damaged files.
 
 #--- lib
-%package	-n %mklibname bacula
+%package	-n %{baculalibname}
 Summary:	Bacula shared libraries
 Group:		Archiving/Backup
 
-%description	-n %mklibname bacula
+%description	-n %{baculalibname}
 %{blurb}
 Bacula is a set of computer programs that permit you (or the system
 administrator) to manage backup, recovery, and verification of computer
@@ -171,9 +173,9 @@ all Jobs run, and all Files saved.
 %package	dir-mysql
 Summary:	Bacula Director and Catalog services
 Group:		Archiving/Backup
-Requires:	mysql-client
-Suggests:	mysql
-BuildRequires:	mysql-devel >= 3.23
+Requires:	mariadb-client
+Suggests:	mariadb
+BuildRequires:	mariadb-devel >= 3.23
 Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
 Requires(post): rpm-helper
@@ -1093,10 +1095,6 @@ fi
 %post_fix_config bat
 %endif
 
-%if %{GUI}
-%post gui-brestore
-%endif
-
 %if %{TRAY}
 %post tray-monitor
 %post_fix_config tray-monitor
@@ -1110,7 +1108,7 @@ fi
 #    %{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
 #fi
 
-%files -n %mklibname bacula
+%files -n %{baculalibname}
 %defattr(0755,root,root,0755)
 %{_libdir}/*.so
 
