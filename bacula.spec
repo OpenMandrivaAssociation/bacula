@@ -6,7 +6,7 @@
 
 %define name bacula
 
-%define _guiver 5.0.3
+%define _guiver 5.2.13
 
 %define _cur_db_ver 12
 
@@ -52,7 +52,7 @@
 #------ Main file
 Summary:	Bacula - The Network Backup Solution
 Name:		bacula
-Version:	5.0.3
+Version:	5.2.13
 Release:	5
 Epoch:		1
 Group:		Archiving/Backup
@@ -60,28 +60,19 @@ License:	GPL v2
 URL:		http://www.bacula.org/
 Source0:	http://prdownloads.sourceforge.net/bacula/bacula-%{version}.tar.gz
 Source5:	http://prdownloads.sourceforge.net/bacula/bacula-gui-%{_guiver}.tar.gz
-Source6:	bacula.pam-0.77
 Source7:	bacula.pam
 Source8:	bacula-sudoers
-Patch0:		bacula-git-20101213.patch
 Patch1:		bacula-mandriva-platform.patch
 Patch3:		bacula-updatedb.diff
-Patch5:		bacula-gui-php_header.diff
-Patch7:		bacula-web-mdv_conf.diff
 Patch9:		bacula-listen.diff
-Patch10:	bacula-2.4.3-cats.patch
-# Patches 12 and 13 are required for backports only
-Patch12:	bacula-5.0.2-libwrap_nsl.diff
-Patch13:	bacula-5.0.2-sqlite-threadsafe.diff
-Patch14:	bacula-5.0.1-config_dir.patch
+Patch14:	bacula-5.2.13-config_dir.patch
 Patch15:	bacula-some_scripts_should_be_configuration_files.diff
 Patch16:	bacula-sudo_sd.diff
 Patch18:	bacula-backupdir.diff
 Patch19:	bacula-openssl_linkage.patch
-Patch20:	bacula-5.0.1-static-sql.patch
-Patch21:	bacula-5.0.3-bnet.patch
+Patch20:	bacula-5.2.12-static-sql.patch
 Patch22:	bacula-5.0.1-gzip.patch
-Patch23:	bacula-5.0.3-mysql-lib.patch
+Patch23:	bacula-5.2.12-mysql-lib.patch
 Patch25:	bacula-5.0.3-link.patch
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
@@ -358,32 +349,6 @@ device (usually a tape drive).
 
 #------ WEB gui
 %if %{GUI}
-%package	gui-web
-Summary:	Bacula Web GUI
-Group:		Archiving/Backup
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	webserver
-Requires:	apache-mod_php
-Requires:	php-pear
-Requires:	php-pear-DB
-Requires:	php-gd
-Requires:	phplot
-Requires:	php-smarty
-
-%description	gui-web
-%{blurb}
-Bacula is a set of computer programs that permit you (or the system
-administrator) to manage backup, recovery, and verification of computer
-data across a network of computers of different kinds. In technical terms,
-it is a network client/server based backup program. Bacula is relatively
-easy to use and efficient, while offering many advanced storage management
-features that make it easy to find and recover lost or damaged files.
-
-Contains the web gui
-
-You need to install MySQL and php-mysql or PostgreSQL and php-pgsql if you want
-to use either of them as the backend database.
-
 #------ GUI-bimagemgr
 %package	gui-bimagemgr
 Summary:	Bacula Image Manager
@@ -449,22 +414,15 @@ The tray monitor for bacula.
 %setup -q
 %setup -q -D -T -a 5
 mv bacula-gui-%{_guiver} gui
-%patch0 -p2 -b .git
 %patch1 -p1 -b .mandriva
 %patch3 -p1 -b .updatedb
-%patch5 -p0 -b .php_header
-%patch7 -p1 -b .webconf
 %patch9 -p1 -b .listen
-%patch10 -p1 -b .cats
-%patch12 -p1 -b .wrap
-%patch13 -p1 -b .sqlite_thread
 %patch14 -p1 -b .config
 %patch15 -p1 -b .some_scripts_should_be_configuration_files
 %patch16 -p1 -b .sudo_sd
 %patch18 -p1 -b .backupdir
 %patch19 -p0 -b .openssl_linkage
-%patch20 -p1 -b .static
-%patch21 -p1 -b .bnet
+#patch20 -p1 -b .static
 %patch22 -p1 -b .gzip
 %patch23 -p1 -b .mysql
 %patch25 -p0 -b .link
@@ -477,7 +435,7 @@ cp %{SOURCE7} bacula.pam
 %else
 %define _configure_tcpw %{nil}
 %endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=%{archivedir} --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=tape --with-fd-user=bacula --with-fd-group=bacula --enable-batch-insert
+%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=%{archivedir} --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=tape --with-fd-user=bacula --with-fd-group=bacula --enable-batch-insert --with-systemd=%{_unitdir}
 
 #--disable-shared --enable-static 
 # workaround fix-libtool-ltmain-from-overlinking bug
@@ -490,7 +448,7 @@ find src -name \*.conf.in -exec sed -i -e 's/@hostname@/@basename@/' {} \;
 %build
 export QMAKE="%{qt4bin}/qmake"
 
-%serverbuild
+#serverbuild
 
 # disable FORTIFY_SOURCE http://www.mail-archive.com/bacula-devel@lists.sourceforge.net/msg01786.html
 export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
@@ -641,11 +599,9 @@ install -d %{buildroot}%{_miconsdir}
 install -d %{buildroot}%{_liconsdir}
 %endif
 
-%if %{WXWINDOWS} || %{BAT}
 convert scripts/bacula.png -resize 16x16 %{buildroot}%{_miconsdir}/bacula.png
 convert scripts/bacula.png -resize 32x32 %{buildroot}%{_iconsdir}/bacula.png
 convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/bacula.png
-%endif
 
 %if %{WXWINDOWS}
 
@@ -752,16 +708,6 @@ cp gui/bimagemgr/bimagemgr.pl %{buildroot}/var/www/cgi-bin
 cp gui/bimagemgr/config.pm %{buildroot}/var/www/cgi-bin/config.pm
 cp gui/bimagemgr/create_cdimage_table.pl %{buildroot}/%{_sysconfdir}
 cp gui/bimagemgr/*.{html,gif} %{buildroot}/var/www/html/bimagemgr
-
-# install of bacula-web
-install -d -m 0755 %{buildroot}/var/www/html/bacula
-cp -rf gui/bacula-web %{buildroot}/var/www/html/bacula
-rm -rf %{buildroot}/var/www/html/bacula/external_packages/{smarty,phplot}
-
-install -d -m 0755 %{buildroot}/var/cache/httpd/bacula-web
-install -d -m 0755 %{buildroot}%{sysconf_dir}/bacula-web
-mv %{buildroot}/var/www/html/bacula/bacula-web/configs/bacula.conf %{buildroot}%{sysconf_dir}/bacula-web/bacula.conf
-rm -rf %{buildroot}/var/www/html/bacula/bacula-web/{configs,templates_c}
 
 # install of brestore
 convert gui/brestore/brestore.png -resize 16x16 %{buildroot}%{_miconsdir}/brestore.png
@@ -1172,7 +1118,7 @@ fi
 %defattr(0644,root,root,0755)
 %{_docdir}/bacula
 %if %{BAT}
-%exclude %{_docdir}/bacula/html
+%exclude %{_docdir}/bacula/*.html
 %endif
 %{_sysconfdir}/sysconfig/bacula
 %dir %{sysconf_dir}
@@ -1181,13 +1127,18 @@ fi
 %attr(0755,root,root) %{_sbindir}/bsmtp
 %attr(0755,root,root) %{_sbindir}/bregex
 %attr(0755,root,root) %{_sbindir}/bwild
-%{_libexecdir}/bacula/btraceback.gdb
-%{_libexecdir}/bacula/btraceback.dbx
-%{_libexecdir}/bacula/btraceback.mdb
+%{_libdir}/bacula/btraceback.gdb
+%{_libdir}/bacula/btraceback.dbx
+%{_libdir}/bacula/btraceback.mdb
 %attr(770, bacula, bacula) %dir %{working_dir}
 %{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/bacula.8*
+%{_mandir}/man8/bregex.8*
 %{_mandir}/man8/btraceback.8*
+%{_mandir}/man8/bwild.8*
+%{_iconsdir}/bacula.png
+%{_miconsdir}/bacula.png
+%{_liconsdir}/bacula.png
 # exclude some manpage here if we are not building the related subpackage
 %if ! %{TRAY}
 %exclude %{_mandir}/man1/bacula-tray-monitor.1*
@@ -1313,14 +1264,8 @@ fi
 %attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bwx-console.conf
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bwx-console
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
-%attr(0755,root,root) %{_sbindir}/bwx-console
+#attr(0755,root,root) %{_sbindir}/bwx-console
 %verify(link) %{_bindir}/bwx-console
-%if %{mdkversion} <= 200700
-%{_menudir}/bacula-console-wx
-%endif
-%{_iconsdir}/bacula.png
-%{_miconsdir}/bacula.png
-%{_liconsdir}/bacula.png
 %{_datadir}/applications/mandriva-bacula-console-wx.desktop
 %{_mandir}/man1/bacula-bwxconsole.1*
 %endif
@@ -1328,15 +1273,12 @@ fi
 %if %{BAT}
 %files bat
 %defattr(0644,root,root,0755)
-%{_docdir}/bacula/html
+%{_docdir}/bacula/*.html
 %attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bat.conf
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bat
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bat
 %attr(0755,root,root) %{_sbindir}/bat
 %verify(link) %{_bindir}/bat
-%if %{mdkversion} <= 200700
-%{_menudir}/bacula-bat
-%endif
 %{_iconsdir}/bacula-bat.png
 %{_miconsdir}/bacula-bat.png
 %{_liconsdir}/bacula-bat.png
@@ -1345,12 +1287,6 @@ fi
 %endif
 
 %if %{GUI}
-%files gui-web
-%dir %attr(0755,apache,apache) /var/www/html/bacula/
-/var/www/html/bacula/*
-%attr(0640,apache,apache) %config(noreplace) %{sysconf_dir}/bacula-web/bacula.conf
-%dir %attr(0755,apache,apache) /var/cache/httpd/bacula-web
-
 %files gui-bimagemgr
 /var/www/html/bimagemgr/*.gif
 /var/www/html/bimagemgr/*.html
@@ -1366,9 +1302,6 @@ fi
 %attr(0755,root,root) %{_sbindir}/brestore.pl
 %verify(link) %{_bindir}/brestore
 %{_datadir}/brestore/brestore.glade
-%if %{mdkversion} <= 200700
-%{_menudir}/bacula-gui-brestore
-%endif
 %{_iconsdir}/brestore.png
 %{_miconsdir}/brestore.png
 %{_liconsdir}/brestore.png
@@ -1383,12 +1316,6 @@ fi
 %config(noreplace) %{_sysconfdir}/pam.d/bacula-tray-monitor
 %attr(0755,root,root) %{_sbindir}/bacula-tray-monitor
 %verify(link) %{_bindir}/bacula-tray-monitor
-%if %{mdkversion} <= 200700
-%{_menudir}/bacula-tray-monitor
-%endif
-%{_iconsdir}/bacula.png
-%{_miconsdir}/bacula.png
-%{_liconsdir}/bacula.png
 %{_datadir}/applications/mandriva-bacula-tray-monitor.desktop
 %{_mandir}/man1/bacula-tray-monitor.1*
 %endif

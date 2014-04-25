@@ -20,8 +20,8 @@ diff -p -up bacula-5.0.1/src/dird/dird.c.config bacula-5.0.1/src/dird/dird.c
 -#define CONFIG_FILE "bacula-dir.conf" /* default configuration file */
 +#define CONFIG_FILE CONFIG_DIR "/bacula-dir.conf" /* default configuration file */
  
- 
- static void usage()
+ /*
+  * This allows the message handler to operate on the database
 diff -p -up bacula-5.0.1/src/filed/filed.c.config bacula-5.0.1/src/filed/filed.c
 diff -p -up bacula-5.0.1/src/host.h.in.config bacula-5.0.1/src/host.h.in
 --- bacula-5.0.1/src/host.h.in.config	2010-02-24 15:33:48.000000000 +0000

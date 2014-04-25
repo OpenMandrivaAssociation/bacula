@@ -1,0 +1,363 @@
+diff -Naur bacula-5.2.12/autoconf/bacula-macros/db.m4 bacula-5.2.12.oden/autoconf/bacula-macros/db.m4
+--- bacula-5.2.12/autoconf/bacula-macros/db.m4	2012-09-13 10:51:19.000000000 +0200
++++ bacula-5.2.12.oden/autoconf/bacula-macros/db.m4	2012-09-15 10:49:21.156415857 +0200
+@@ -167,44 +167,44 @@
+            db_prog="mysql"
+            if test -f /usr/local/mysql/bin/mysql; then
+               MYSQL_BINDIR=/usr/local/mysql/bin
+-              if test -f /usr/local/mysql/lib64/mysql/libmysqlclient_r.a \
+-                 -o -f /usr/local/mysql/lib64/mysql/libmysqlclient_r.so; then
++              if test -f /usr/local/mysql/lib64/mysql/libmysqlclient.a \
++                 -o -f /usr/local/mysql/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/mysql/lib64/mysql
+               else
+                  MYSQL_LIBDIR=/usr/local/mysql/lib/mysql
+               fi
+            elif test -f /usr/bin/mysql; then
+               MYSQL_BINDIR=/usr/bin
+-              if test -f /usr/lib64/mysql/libmysqlclient_r.a \
+-                  -o -f /usr/lib64/mysql/libmysqlclient_r.so; then  
++              if test -f /usr/lib64/mysql/libmysqlclient.a \
++                  -o -f /usr/lib64/mysql/libmysqlclient.so; then  
+                   MYSQL_LIBDIR=/usr/lib64/mysql
+-              elif test -f /usr/lib/mysql/libmysqlclient_r.a \
+-                  -o -f /usr/lib/mysql/libmysqlclient_r.so; then
++              elif test -f /usr/lib/mysql/libmysqlclient.a \
++                  -o -f /usr/lib/mysql/libmysqlclient.so; then
+                   MYSQL_LIBDIR=/usr/lib/mysql
+               else
+                   MYSQL_LIBDIR=/usr/lib
+               fi
+            elif test -f /usr/local/bin/mysql; then
+               MYSQL_BINDIR=/usr/local/bin
+-              if test -f /usr/local/lib64/mysql/libmysqlclient_r.a \
+-                  -o -f /usr/local/lib64/mysql/libmysqlclient_r.so; then  
++              if test -f /usr/local/lib64/mysql/libmysqlclient.a \
++                  -o -f /usr/local/lib64/mysql/libmysqlclient.so; then  
+                   MYSQL_LIBDIR=/usr/local/lib64/mysql
+-              elif test -f /usr/local/lib/mysql/libmysqlclient_r.a \
+-                  -o -f /usr/local/lib/mysql/libmysqlclient_r.so; then
++              elif test -f /usr/local/lib/mysql/libmysqlclient.a \
++                  -o -f /usr/local/lib/mysql/libmysqlclient.so; then
+                   MYSQL_LIBDIR=/usr/local/lib/mysql
+               else
+                   MYSQL_LIBDIR=/usr/local/lib
+               fi
+            elif test -f $withval/bin/mysql; then
+               MYSQL_BINDIR=$withval/bin
+-              if test -f $withval/lib64/mysql/libmysqlclient_r.a \
+-                  -o -f $withval/lib64/mysql/libmysqlclient_r.so; then
++              if test -f $withval/lib64/mysql/libmysqlclient.a \
++                  -o -f $withval/lib64/mysql/libmysqlclient.so; then
+                   MYSQL_LIBDIR=$withval/lib64/mysql
+-              elif test -f $withval/lib64/libmysqlclient_r.a \
+-                  -o -f $withval/lib64/libmysqlclient_r.so; then
++              elif test -f $withval/lib64/libmysqlclient.a \
++                  -o -f $withval/lib64/libmysqlclient.so; then
+                   MYSQL_LIBDIR=$withval/lib64
+-              elif test -f $withval/lib/libmysqlclient_r.a \
+-                  -o -f $withval/lib/libmysqlclient_r.so; then
++              elif test -f $withval/lib/libmysqlclient.a \
++                  -o -f $withval/lib/libmysqlclient.so; then
+                   MYSQL_LIBDIR=$withval/lib/
+               else
+                   MYSQL_LIBDIR=$withval/lib/mysql
+@@ -213,10 +213,10 @@
+               AC_MSG_RESULT(no)
+               AC_MSG_ERROR(Unable to find mysql in standard locations)
+            fi
+-           if test -f $SQL_LIBDIR/libmysqlclient_r.so; then
+-              DB_PROG_LIB=$SQL_LIBDIR/libmysqlclient_r.so
++           if test -f $SQL_LIBDIR/libmysqlclient.so; then
++              DB_PROG_LIB=$SQL_LIBDIR/libmysqlclient.so
+            else
+-              DB_PROG_LIB=$SQL_LIBDIR/libmysqlclient_r.a
++              DB_PROG_LIB=$SQL_LIBDIR/libmysqlclient.a
+            fi
+         ;;
+         "postgresql")
+@@ -342,8 +342,8 @@
+ #           elif test -f /usr/local/mysql/include/mysql/mysql.h; then
+            if test -f /usr/local/mysql/include/mysql/mysql.h; then
+               MYSQL_INCDIR=/usr/local/mysql/include/mysql
+-              if test -f /usr/local/mysql/lib64/mysql/libmysqlclient_r.a \
+-                      -o -f /usr/local/mysql/lib64/mysql/libmysqlclient_r.so; then
++              if test -f /usr/local/mysql/lib64/mysql/libmysqlclient.a \
++                      -o -f /usr/local/mysql/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/mysql/lib64/mysql
+               else
+                  MYSQL_LIBDIR=/usr/local/mysql/lib/mysql
+@@ -351,17 +351,17 @@
+               MYSQL_BINDIR=/usr/local/mysql/bin
+            elif test -f /usr/include/mysql/mysql.h; then
+               MYSQL_INCDIR=/usr/include/mysql
+-              if test -f /usr/lib64/mysql/libmysqlclient_r.a \
+-                      -o -f /usr/lib64/mysql/libmysqlclient_r.so; then  
++              if test -f /usr/lib64/mysql/libmysqlclient.a \
++                      -o -f /usr/lib64/mysql/libmysqlclient.so; then  
+                  MYSQL_LIBDIR=/usr/lib64/mysql
+-              elif test -f /usr/lib64/libmysqlclient_r.a \
+-                        -o -f /usr/lib64/libmysqlclient_r.so; then
++              elif test -f /usr/lib64/libmysqlclient.a \
++                        -o -f /usr/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib64
+-              elif test -f /usr/lib/x86_64-linux-gnu/libmysqlclient_r.a \
+-                        -o -f /usr/lib/x86_64-linux-gnu/libmysqlclient_r.so; then
++              elif test -f /usr/lib/x86_64-linux-gnu/libmysqlclient.a \
++                        -o -f /usr/lib/x86_64-linux-gnu/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib/x86_64-linux-gnu
+-              elif test -f /usr/lib/mysql/libmysqlclient_r.a \
+-                        -o -f /usr/lib/mysql/libmysqlclient_r.so; then
++              elif test -f /usr/lib/mysql/libmysqlclient.a \
++                        -o -f /usr/lib/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib/mysql
+               else
+                  MYSQL_LIBDIR=/usr/lib
+@@ -369,8 +369,8 @@
+               MYSQL_BINDIR=/usr/bin
+            elif test -f /usr/include/mysql.h; then
+               MYSQL_INCDIR=/usr/include
+-              if test -f /usr/lib64/libmysqlclient_r.a \
+-                      -o -f /usr/lib64/libmysqlclient_r.so; then
++              if test -f /usr/lib64/libmysqlclient.a \
++                      -o -f /usr/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib64
+               else
+                  MYSQL_LIBDIR=/usr/lib
+@@ -378,8 +378,8 @@
+               MYSQL_BINDIR=/usr/bin
+            elif test -f /usr/local/include/mysql/mysql.h; then
+               MYSQL_INCDIR=/usr/local/include/mysql
+-              if test -f /usr/local/lib64/mysql/libmysqlclient_r.a \
+-                      -o -f /usr/local/lib64/mysql/libmysqlclient_r.so; then
++              if test -f /usr/local/lib64/mysql/libmysqlclient.a \
++                      -o -f /usr/local/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/lib64/mysql
+               else
+                  MYSQL_LIBDIR=/usr/local/lib/mysql
+@@ -387,8 +387,8 @@
+               MYSQL_BINDIR=/usr/local/bin
+            elif test -f /usr/local/include/mysql.h; then
+               MYSQL_INCDIR=/usr/local/include
+-              if test -f /usr/local/lib64/libmysqlclient_r.a \
+-                      -o -f /usr/local/lib64/libmysqlclient_r.so; then
++              if test -f /usr/local/lib64/libmysqlclient.a \
++                      -o -f /usr/local/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/lib64
+               else
+                  MYSQL_LIBDIR=/usr/local/lib
+@@ -401,14 +401,14 @@
+         else
+            if test -f $withval/include/mysql/mysql.h; then
+               MYSQL_INCDIR=$withval/include/mysql
+-              if test -f $withval/lib64/mysql/libmysqlclient_r.a \
+-                   -o -f $withval/lib64/mysql/libmysqlclient_r.so; then
++              if test -f $withval/lib64/mysql/libmysqlclient.a \
++                   -o -f $withval/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib64/mysql
+-              elif test -f $withval/lib64/libmysqlclient_r.a \
+-                   -o -f $withval/lib64/libmysqlclient_r.so; then
++              elif test -f $withval/lib64/libmysqlclient.a \
++                   -o -f $withval/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib64
+-              elif test -f $withval/lib/libmysqlclient_r.a \
+-                   -o -f $withval/lib/libmysqlclient_r.so; then
++              elif test -f $withval/lib/libmysqlclient.a \
++                   -o -f $withval/lib/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib
+               else
+                  MYSQL_LIBDIR=$withval/lib/mysql
+@@ -416,8 +416,8 @@
+               MYSQL_BINDIR=$withval/bin
+            elif test -f $withval/include/mysql.h; then
+               MYSQL_INCDIR=$withval/include
+-              if test -f $withval/lib64/libmysqlclient_r.a \
+-                   -o -f $withval/lib64/libmysqlclient_r.so; then
++              if test -f $withval/lib64/libmysqlclient.a \
++                   -o -f $withval/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib64
+               else
+                  MYSQL_LIBDIR=$withval/lib
+@@ -429,16 +429,16 @@
+            fi
+         fi
+      MYSQL_INCLUDE=-I$MYSQL_INCDIR
+-     if test -f $MYSQL_LIBDIR/libmysqlclient_r.a \
+-          -o -f $MYSQL_LIBDIR/libmysqlclient_r.so; then
++     if test -f $MYSQL_LIBDIR/libmysqlclient.a \
++          -o -f $MYSQL_LIBDIR/libmysqlclient.so; then
+         if test x$use_libtool != xno; then
+-           MYSQL_LIBS="-R $MYSQL_LIBDIR -L$MYSQL_LIBDIR -lmysqlclient_r -lz"
++           MYSQL_LIBS="-R $MYSQL_LIBDIR -L$MYSQL_LIBDIR -lmysqlclient -lz"
+         else
+-           MYSQL_LIBS="-L$MYSQL_LIBDIR -lmysqlclient_r -lz"
++           MYSQL_LIBS="-L$MYSQL_LIBDIR -lmysqlclient -lz"
+         fi
+         DB_LIBS="${DB_LIBS} ${MYSQL_LIBS}"
+      fi
+-     MYSQL_LIB=$MYSQL_LIBDIR/libmysqlclient_r.a
++     MYSQL_LIB=$MYSQL_LIBDIR/libmysqlclient.a
+ 
+      AC_DEFINE(HAVE_MYSQL, 1, [Set if you have an MySQL Database])
+      AC_MSG_RESULT(yes)
+diff -Naur bacula-5.2.12/configure bacula-5.2.12.oden/configure
+--- bacula-5.2.12/configure	2012-09-15 10:43:50.926397391 +0200
++++ bacula-5.2.12.oden/configure	2012-09-15 10:52:10.530425328 +0200
+@@ -24318,8 +24318,8 @@
+ #           elif test -f /usr/local/mysql/include/mysql/mysql.h; then
+            if test -f /usr/local/mysql/include/mysql/mysql.h; then
+               MYSQL_INCDIR=/usr/local/mysql/include/mysql
+-              if test -f /usr/local/mysql/lib64/mysql/libmysqlclient_r.a \
+-                      -o -f /usr/local/mysql/lib64/mysql/libmysqlclient_r.so; then
++              if test -f /usr/local/mysql/lib64/mysql/libmysqlclient.a \
++                      -o -f /usr/local/mysql/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/mysql/lib64/mysql
+               else
+                  MYSQL_LIBDIR=/usr/local/mysql/lib/mysql
+@@ -24327,17 +24327,17 @@
+               MYSQL_BINDIR=/usr/local/mysql/bin
+            elif test -f /usr/include/mysql/mysql.h; then
+               MYSQL_INCDIR=/usr/include/mysql
+-              if test -f /usr/lib64/mysql/libmysqlclient_r.a \
+-                      -o -f /usr/lib64/mysql/libmysqlclient_r.so; then
++              if test -f /usr/lib64/mysql/libmysqlclient.a \
++                      -o -f /usr/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib64/mysql
+-              elif test -f /usr/lib64/libmysqlclient_r.a \
+-                        -o -f /usr/lib64/libmysqlclient_r.so; then
++              elif test -f /usr/lib64/libmysqlclient.a \
++                        -o -f /usr/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib64
+-              elif test -f /usr/lib/x86_64-linux-gnu/libmysqlclient_r.a \
+-                        -o -f /usr/lib/x86_64-linux-gnu/libmysqlclient_r.so; then
++              elif test -f /usr/lib/x86_64-linux-gnu/libmysqlclient.a \
++                        -o -f /usr/lib/x86_64-linux-gnu/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib/x86_64-linux-gnu
+-              elif test -f /usr/lib/mysql/libmysqlclient_r.a \
+-                        -o -f /usr/lib/mysql/libmysqlclient_r.so; then
++              elif test -f /usr/lib/mysql/libmysqlclient.a \
++                        -o -f /usr/lib/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib/mysql
+               else
+                  MYSQL_LIBDIR=/usr/lib
+@@ -24345,8 +24345,8 @@
+               MYSQL_BINDIR=/usr/bin
+            elif test -f /usr/include/mysql.h; then
+               MYSQL_INCDIR=/usr/include
+-              if test -f /usr/lib64/libmysqlclient_r.a \
+-                      -o -f /usr/lib64/libmysqlclient_r.so; then
++              if test -f /usr/lib64/libmysqlclient.a \
++                      -o -f /usr/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/lib64
+               else
+                  MYSQL_LIBDIR=/usr/lib
+@@ -24354,8 +24354,8 @@
+               MYSQL_BINDIR=/usr/bin
+            elif test -f /usr/local/include/mysql/mysql.h; then
+               MYSQL_INCDIR=/usr/local/include/mysql
+-              if test -f /usr/local/lib64/mysql/libmysqlclient_r.a \
+-                      -o -f /usr/local/lib64/mysql/libmysqlclient_r.so; then
++              if test -f /usr/local/lib64/mysql/libmysqlclient.a \
++                      -o -f /usr/local/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/lib64/mysql
+               else
+                  MYSQL_LIBDIR=/usr/local/lib/mysql
+@@ -24363,8 +24363,8 @@
+               MYSQL_BINDIR=/usr/local/bin
+            elif test -f /usr/local/include/mysql.h; then
+               MYSQL_INCDIR=/usr/local/include
+-              if test -f /usr/local/lib64/libmysqlclient_r.a \
+-                      -o -f /usr/local/lib64/libmysqlclient_r.so; then
++              if test -f /usr/local/lib64/libmysqlclient.a \
++                      -o -f /usr/local/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=/usr/local/lib64
+               else
+                  MYSQL_LIBDIR=/usr/local/lib
+@@ -24378,14 +24378,14 @@
+         else
+            if test -f $withval/include/mysql/mysql.h; then
+               MYSQL_INCDIR=$withval/include/mysql
+-              if test -f $withval/lib64/mysql/libmysqlclient_r.a \
+-                   -o -f $withval/lib64/mysql/libmysqlclient_r.so; then
++              if test -f $withval/lib64/mysql/libmysqlclient.a \
++                   -o -f $withval/lib64/mysql/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib64/mysql
+-              elif test -f $withval/lib64/libmysqlclient_r.a \
+-                   -o -f $withval/lib64/libmysqlclient_r.so; then
++              elif test -f $withval/lib64/libmysqlclient.a \
++                   -o -f $withval/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib64
+-              elif test -f $withval/lib/libmysqlclient_r.a \
+-                   -o -f $withval/lib/libmysqlclient_r.so; then
++              elif test -f $withval/lib/libmysqlclient.a \
++                   -o -f $withval/lib/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib
+               else
+                  MYSQL_LIBDIR=$withval/lib/mysql
+@@ -24393,8 +24393,8 @@
+               MYSQL_BINDIR=$withval/bin
+            elif test -f $withval/include/mysql.h; then
+               MYSQL_INCDIR=$withval/include
+-              if test -f $withval/lib64/libmysqlclient_r.a \
+-                   -o -f $withval/lib64/libmysqlclient_r.so; then
++              if test -f $withval/lib64/libmysqlclient.a \
++                   -o -f $withval/lib64/libmysqlclient.so; then
+                  MYSQL_LIBDIR=$withval/lib64
+               else
+                  MYSQL_LIBDIR=$withval/lib
+@@ -24407,16 +24407,16 @@
+            fi
+         fi
+      MYSQL_INCLUDE=-I$MYSQL_INCDIR
+-     if test -f $MYSQL_LIBDIR/libmysqlclient_r.a \
+-          -o -f $MYSQL_LIBDIR/libmysqlclient_r.so; then
++     if test -f $MYSQL_LIBDIR/libmysqlclient.a \
++          -o -f $MYSQL_LIBDIR/libmysqlclient.so; then
+         if test x$use_libtool != xno; then
+-           MYSQL_LIBS="-R $MYSQL_LIBDIR -L$MYSQL_LIBDIR -lmysqlclient_r -lz"
++           MYSQL_LIBS="-R $MYSQL_LIBDIR -L$MYSQL_LIBDIR -lmysqlclient -lz"
+         else
+-           MYSQL_LIBS="-L$MYSQL_LIBDIR -lmysqlclient_r -lz"
++           MYSQL_LIBS="-L$MYSQL_LIBDIR -lmysqlclient -lz"
+         fi
+         DB_LIBS="${DB_LIBS} ${MYSQL_LIBS}"
+      fi
+-     MYSQL_LIB=$MYSQL_LIBDIR/libmysqlclient_r.a
++     MYSQL_LIB=$MYSQL_LIBDIR/libmysqlclient.a
+ 
+ 
+ $as_echo "#define HAVE_MYSQL 1" >>confdefs.h
+@@ -24441,13 +24441,13 @@
+          saved_LIBS="${LIBS}"
+          LIBS="${saved_LIBS} -lz"
+ 
+-         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mysql_thread_safe in -lmysqlclient_r" >&5
+-$as_echo_n "checking for mysql_thread_safe in -lmysqlclient_r... " >&6; }
++         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mysql_thread_safe in -lmysqlclient" >&5
++$as_echo_n "checking for mysql_thread_safe in -lmysqlclient... " >&6; }
+ if ${ac_cv_lib_mysqlclient_r_mysql_thread_safe+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-lmysqlclient_r  $LIBS"
++LIBS="-lmysqlclient  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -24618,13 +24618,13 @@
+          saved_LIBS="${LIBS}"
+          LIBS="${saved_LIBS} -lz -lm -lcrypt"
+ 
+-         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mysql_thread_safe in -lmysqlclient_r" >&5
+-$as_echo_n "checking for mysql_thread_safe in -lmysqlclient_r... " >&6; }
++         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mysql_thread_safe in -lmysqlclient" >&5
++$as_echo_n "checking for mysql_thread_safe in -lmysqlclient... " >&6; }
+ if ${ac_cv_lib_mysqlclient_r_mysql_thread_safe+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+   ac_check_lib_save_LIBS=$LIBS
+-LIBS="-lmysqlclient_r  $LIBS"
++LIBS="-lmysqlclient  $LIBS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
