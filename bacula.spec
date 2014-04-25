@@ -101,7 +101,6 @@ Requires:	tcp_wrappers
 %endif
 BuildRequires:	imagemagick
 BuildRequires:	libtool
-BuildRequires:	%{_lib}termcap-devel
 
 %description
 %{blurb}
