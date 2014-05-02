@@ -1,1319 +1,659 @@
-# required to build 3.0.0 correctly
-# those two are required to build on 2009.1+
-%define _disable_ld_no_undefined 1
-%define __noautoreq 'perl\\(Bbase\\)'
-%define _disable_libtoolize 1
+%define _libexecdir /usr/libexec
+%define uid 133
+%define username bacula
+%define _guiver 7.0.2
+%define group Archiving/Backup
 
-%define name bacula
+%define with_omv 1
 
-%define _guiver 5.2.13
+Name:               bacula
+Version:            7.0.2
+Release:            1
+Summary:            Cross platform network backup for Linux, Unix, Mac and Windows
+License:            AGPLv3 
+Group:              %{group}
+URL:                http://www.bacula.org
+# this shit will be fixed by who epoched the previouse build
+Epoch:		        2
+Source0:            http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
+Source1:	    bacula.rpmlintrc
+Source2:            quickstart_postgresql.txt
+Source3:            quickstart_mysql.txt
+Source4:            quickstart_sqlite3.txt
+Source5:            README
+Source6:            %{name}.logrotate
+Source7:            %{name}-fd.init
+Source8:            %{name}-dir.init
+Source9:            %{name}-sd.init
+Source10:           %{name}-fd.service
+Source11:           %{name}-dir.service
+Source12:           %{name}-sd.service
+Source13:           %{name}-bat.desktop
+Source14:           %{name}-traymonitor.desktop
+Source15:           %{name}-fd.sysconfig
+Source16:           %{name}-dir.sysconfig
+Source17:           %{name}-sd.sysconfig
 
-%define _cur_db_ver 12
 
-%define baculalibname %mklibname bacula %{_guiver}
+Patch1:             %{name}-5.0.2-openssl.patch
+Patch2:             %{name}-7.0.0-queryfile.patch
+Patch3:             %{name}-5.0.3-sqlite-priv.patch
+Patch4:             %{name}-5.2.13-bat-build.patch
+Patch5:             %{name}-5.2.12-seg-fault.patch
+Patch6:             %{name}-5.2.13-logwatch.patch
+Patch7:             %{name}-non-free-code.patch
+Patch8:             %{name}-7.0.2-configure.patch
+Patch9:             %{name}-7.0.2-git.patch
 
-# (eugeni) starting with 5.0.0, bacula dropped sqlite2 support
-# in order to be able to compile everything in one run, sqlite3 support
-# became mandatory now
-%define MYSQL 1
-%define PGSQL 1
-%define WXWINDOWS 1
-%define BAT 1
-%define TCPW 1
-%define GUI 1
-%define TRAY 1
+BuildRequires:      desktop-file-utils
+BuildRequires:      perl
+BuildRequires:      sed
 
-# directories and paths
-%define sysconf_dir %{_sysconfdir}/bacula
-%define script_dir %{_libdir}/bacula
-%define working_dir /var/lib/bacula
-%define archivedir /var/spool/bacula
-%define subsysdir /var/lock/subsys
+BuildRequires:      glibc-devel
+BuildRequires:      acl-devel
+BuildRequires:      stdc++-devel
+BuildRequires:      pkgconfig(libxml-2.0)
+BuildRequires:      cap-devel
+BuildRequires:      liblzo-devel
 
-%{?_with_mysql: %{expand: %%global MYSQL 1}}
-%{?_without_mysql: %{expand: %%global MYSQL 0}}
-%{?_with_pgsql: %{expand: %%global PGSQL 1}}
-%{?_without_pgsql: %{expand: %%global PGSQL 0}}
-%{?_with_wx: %{expand: %%global WXWINDOWS 1}}
-%{?_without_wx: %{expand: %%global WXWINDOWS 0}}
-%{?_with_bat: %{expand: %%global BAT 1}}
-%{?_without_bat: %{expand: %%global BAT 0}}
-%{?_with_wrap: %{expand: %%global TCPW 1}}
-%{?_without_wrap: %{expand: %%global TCPW 0}}
-%{?_with_gui: %{expand: %%global GUI 1}}
-%{?_without_gui: %{expand: %%global GUI 0}}
-%{?_with_tray: %{expand: %%global TRAY 1}}
-%{?_without_tray: %{expand: %%global TRAY 0}}
-
-%define blurb Bacula - It comes by night and sucks the vital essence from your computers.
-
-# fixes passwords in configuration files
-# removing "SubSys Directory" is needed if upgrading from 1.30a or lower
-%define post_fix_config() { umask 0037; if [ -s %{sysconf_dir}/.pw.sed ]; then for i in %{sysconf_dir}/%{1}.conf %{sysconf_dir}/%{1}.conf.rpmnew; do if [ -s $i ]; then sed -f %{sysconf_dir}/.pw.sed $i > $i.tmp; sed -e '/SubSys[[:space:]]*Directory/I d' $i.tmp > $i; rm -f $i.tmp; fi; done; fi; }
-
-#------ Main file
-Summary:	Bacula - The Network Backup Solution
-Name:		bacula
-Version:	5.2.13
-Release:	5
-Epoch:		1
-Group:		Archiving/Backup
-License:	GPL v2
-URL:		http://www.bacula.org/
-Source0:	http://prdownloads.sourceforge.net/bacula/bacula-%{version}.tar.gz
-Source5:	http://prdownloads.sourceforge.net/bacula/bacula-gui-%{_guiver}.tar.gz
-Source7:	bacula.pam
-Source8:	bacula-sudoers
-Patch1:		bacula-mandriva-platform.patch
-Patch3:		bacula-updatedb.diff
-Patch9:		bacula-listen.diff
-Patch14:	bacula-5.2.13-config_dir.patch
-Patch15:	bacula-some_scripts_should_be_configuration_files.diff
-Patch16:	bacula-sudo_sd.diff
-Patch18:	bacula-backupdir.diff
-Patch19:	bacula-openssl_linkage.patch
-Patch20:	bacula-5.2.12-static-sql.patch
-Patch22:	bacula-5.0.1-gzip.patch
-Patch23:	bacula-5.2.12-mysql-lib.patch
-Patch25:	bacula-5.0.3-link.patch
-BuildRequires:	cdrecord
-BuildRequires:	dvd+rw-tools
-BuildRequires:	gettext
-BuildRequires:	gettext-devel
-BuildRequires:	acl-devel
-BuildRequires:	mkisofs
-BuildRequires:	mtx
-BuildRequires:	pkgconfig
-BuildRequires:	zlib-devel
-BuildRequires: 	openssl-devel
-BuildRequires: 	perl-base
-BuildRequires: 	python-devel
-%if %{TCPW}
-BuildRequires:	tcp_wrappers-devel
-Requires:	tcp_wrappers
+%if %{with_omv} 
+BuildRequires:      mariadb-devel >= 3.23
+%else
+BuildRequires:      mysql-devel
 %endif
-BuildRequires:	imagemagick
-BuildRequires:	libtool
+BuildRequires:      pkgconfig(libecpg)
+BuildRequires:      pkgconfig(sqlite3)
+BuildRequires:      pkgconfig(ncurses)
+BuildRequires:      pkgconfig(openssl)
+BuildRequires:      readline-devel
+BuildRequires:      pkgconfig(zlib)
+BuildRequires:      qt4-devel >= 4.6.2
+BuildRequires:      tcp_wrappers-devel
+BuildRequires:      systemd
+
 
 %description
-%{blurb}
-Bacula is a set of computer programs that permit you (or the system
-administrator) to manage backup, recovery, and verification of computer
-data across a network of computers of different kinds. In technical terms,
-it is a network client/server based backup program. Bacula is relatively
-easy to use and efficient, while offering many advanced storage management
-features that make it easy to find and recover lost or damaged files.
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture and is efficient and relatively easy to
+use, while offering many advanced storage management features that make it easy
+to find and recover lost or damaged files.
 
-#--- lib
-%package	-n %{baculalibname}
-Summary:	Bacula shared libraries
-Group:		Archiving/Backup
 
-%description	-n %{baculalibname}
-%{blurb}
-Bacula is a set of computer programs that permit you (or the system
-administrator) to manage backup, recovery, and verification of computer
-data across a network of computers of different kinds. In technical terms,
-it is a network client/server based backup program. Bacula is relatively
-easy to use and efficient, while offering many advanced storage management
-features that make it easy to find and recover lost or damaged files.
+##########################################
+%define baculalibname %mklibname bacula %{_guiver}
 
-#--- common
-%package	common
-Summary:	Common files for bacula package
-Group:		Archiving/Backup
-Requires(post): rpm-helper
-Requires(postun): rpm-helper
-Conflicts:	bacula-dir-common < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-mysql < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-pgsql < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-sqlite3 < %{epoch}:%{version}-%{release}
-# bacula-dir-sqlite has been removed but we keep the conflict for upgrades
-Conflicts:	bacula-dir-sqlite < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-fd < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-sd < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-console < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-console-wx < %{epoch}:%{version}-%{release}
-Conflicts:	bacula-tray-monitor < %{epoch}:%{version}-%{release}
+%package -n %{baculalibname}
+Summary:            Bacula libraries
+Group:              %{group}
 
-%description	common
-%{blurb}
-Bacula is a set of computer programs that permit you (or the system
-administrator) to manage backup, recovery, and verification of computer
-data across a network of computers of different kinds. In technical terms,
-it is a network client/server based backup program. Bacula is relatively
-easy to use and efficient, while offering many advanced storage management
-features that make it easy to find and recover lost or damaged files.
 
-#------ Directory service
-%package	dir-common
-Summary:	Bacula Director and Catalog services
-Group:		Archiving/Backup
-Requires(pre,postun):	bacula-common
-Requires(preun):	rpm-helper
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-%if %{TCPW}
-Requires:	tcp_wrappers
-%endif
-Suggests:	mail-server
+%description -n %{baculalibname}
+Bacula is a set of programs that allow you to manage the backup,
+recovery, and verification of computer data across a network of
+different computers. It is based on a client/server architecture.
 
-%description	dir-common
-%{blurb}
-Bacula Director is the program that supervises all the backup, restore, verify
-and archive operations. The system administrator uses the Bacula Director to
-schedule backups and to recover files.
-Catalog services are comprised of the software programs responsible for
-maintaining the file indexes and volume databases for all files backed up.
-The Catalog services permit the System Administrator or user to quickly locate
-and restore any desired file, since it maintains a record of all Volumes used,
-all Jobs run, and all Files saved.
+This package contains basic Bacula libraries, which are used by all
+Bacula programs.
 
-#--- mysql
-%if %{MYSQL}
-%package	dir-mysql
-Summary:	Bacula Director and Catalog services
-Group:		Archiving/Backup
+%files  -n %{baculalibname}
+%doc AUTHORS ChangeLog LICENSE SUPPORT ReleaseNotes
+%{_libdir}/libbac-%{version}.so
+%{_libdir}/libbaccfg-%{version}.so
+%{_libdir}/libbacfind-%{version}.so
+
+
+############################################
+%define devname		%mklibname -d %{name}
+
+%package  -n	%{devname}
+Summary:            Bacula development files
+Group:              Development/Other
+Requires:           %{baculalibname} = %{EVRD}
+Requires:           bacula-dir-sql = %{EVRD}
+
+%description  -n	%{devname}
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This development package contains static libraries and header files.
+
+%files   -n	%{devname}
+%{_includedir}/bacula
+%{_libdir}/libbac.so
+%{_libdir}/libbaccfg.so
+%{_libdir}/libbacfind.so
+%{_libdir}/libbacsql.so
+
+##############################################
+
+%package dir-sql
+Summary:            Bacula SQL libraries
+Group:              %{group}
+# I don't know if still neded to be checked
+%if %{with_omv}
 Requires:	mariadb-client
 Suggests:	mariadb
-BuildRequires:	mariadb-devel >= 3.23
-Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
-Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
-Requires(post): rpm-helper
-Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-pgsql bacula-dir-sqlite3
-
-%description	dir-mysql
-%{blurb}
-Bacula Director is the program that supervises all the backup, restore, verify
-and archive operations. The system administrator uses the Bacula Director to
-schedule backups and to recover files.
-Catalog services are comprised of the software programs responsible for
-maintaining the file indexes and volume databases for all files backed up.
-The Catalog services permit the System Administrator or user to quickly locate
-and restore any desired file, since it maintains a record of all Volumes used,
-all Jobs run, and all Files saved.
-This build requires MySQL to be installed separately as the catalog database.
 %endif
-
-#--- pgsql
-%if %{PGSQL}
-%package	dir-pgsql
-Summary:	Bacula Director and Catalog services
-Group:		Archiving/Backup
-Requires:	postgresql
-Suggests:	postgresql-server
-BuildRequires:	postgresql-devel >= 9.0
-Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
-Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
-Requires(post): rpm-helper
-Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-mysql bacula-dir-sqlite3
-
-%description	dir-pgsql
-%{blurb}
-Bacula Director is the program that supervises all the backup, restore, verify
-and archive operations. The system administrator uses the Bacula Director to
-schedule backups and to recover files.
-Catalog services are comprised of the software programs responsible for
-maintaining the file indexes and volume databases for all files backed up.
-The Catalog services permit the System Administrator or user to quickly locate
-and restore any desired file, since it maintains a record of all Volumes used,
-all Jobs run, and all Files saved.
-This build requires Postgres to be installed separately as the catalog
-database.
-%endif
-
-#--- sqlite3
-%package	dir-sqlite3
-Summary:	Bacula Director and Catalog services
-Group:		Archiving/Backup
-Requires:	sqlite3-tools >= 3.4.2
-BuildRequires:	sqlite3-devel >= 3.4.2
-Requires:	bacula-dir-common = %{epoch}:%{version}-%{release}
-Requires(post):	bacula-dir-common = %{epoch}:%{version}-%{release}
-Requires(post): rpm-helper
-Provides:	bacula-dir = %{epoch}:%{version}-%{release}
-Conflicts:	bacula-dir-mysql bacula-dir-pgsql
-# bacula-dir-sqlite has been removed we now provide it for upgrades
-Obsoletes:	bacula-dir-sqlite
-Provides:	bacula-dir-sqlite = %{epoch}:%{version}-%{release}
-
-%description	dir-sqlite3
-%{blurb}
-Bacula Director is the program that supervises all the backup, restore, verify
-and archive operations. The system administrator uses the Bacula Director to
-schedule backups and to recover files.
-Catalog services are comprised of the software programs responsible for
-maintaining the file indexes and volume databases for all files backed up.
-The Catalog services permit the System Administrator or user to quickly locate
-and restore any desired file, since it maintains a record of all Volumes used,
-all Jobs run, and all Files saved.
-This build uses an embedded sqlite catalog database.
-
-#------ Console
-
-#--- main console
-%package	console
-Summary:	Bacula Console
-Group:		Archiving/Backup
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-BuildRequires:	readline-devel
-BuildRequires:	ncurses-devel
-Requires:	usermode-consoleonly
-
-%description	console
-%{blurb}
-Bacula Console is the program that allows the administrator or user to
-communicate with the Bacula Director.
-This is the text only console interface.
-
-#--- console-wx
-%if %{WXWINDOWS}
-%package	console-wx
-Summary:	Bacula wxWindows Console
-Group:		Archiving/Backup
-BuildRequires:	wxgtku-devel
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	usermode, usermode-consoleonly
-
-%description	console-wx
-%{blurb}
-Bacula Console is the program that allows the administrator or user to
-communicate with the Bacula Director.
-This is the wxWindows GUI interface.
-%endif
-
-#--- console-bat
-%if %{BAT}
-%package	bat
-Summary:	Bacula Administration Tool
-Group:		Archiving/Backup
-BuildRequires:	qt4-devel >= 4.2
-BuildRequires:	libqwt-devel >= 5.0.2
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	usermode
-Requires:	usermode-consoleonly
-
-%description	bat
-%{blurb}
-This is the Bacula Administration Tool package. It is an add-on to
-the client or server packages.
-%endif
-
-#------ File services
-
-%package	fd
-Summary:	Bacula File services (Client)
-Group:		Archiving/Backup
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires(post): rpm-helper
-Requires(preun):	rpm-helper
-Requires(postun):	bacula-common
-%if %{TCPW}
-Requires:	tcp_wrappers
-%endif
-
-%description	fd
-%{blurb}
-Bacula File services (or Client program) is the software program that is
-installed on the machine to be backed up. It is specific to the operating
-system on which it runs and is responsible for providing the file attributes
-and data when requested by the Director. The File services are also responsible
-for the file system dependent part of restoring the file attributes and data
-during a recovery operation.
-This program runs as a daemon on the machine to be backed up, and in some of
-the documentation, the File daemon is referred to as the Client (for example in
-Bacula configuration file).
-
-#------ Storage services
-%package	sd
-Summary:	Bacula Storage services
-Group:		Archiving/Backup
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires(post): rpm-helper
-Requires(preun):	rpm-helper
-Requires(postun):	bacula-common
-%if %{TCPW}
-Requires:	tcp_wrappers
-%endif
-Suggests:	mtx
-Suggests:	sudo
-Suggests:	smartmontools
-
-%description	sd
-%{blurb}
-Bacula Storage services consist of the software programs that perform the
-storage and recovery of the file attributes and data to the physical backup
-media or volumes. In other words, the Storage daemon is responsible for reading
-and writing your tapes (or other storage media, e.g. files).
-The Storage services runs as a daemon on the machine that has the backup
-device (usually a tape drive).
-
-#------ WEB gui
-%if %{GUI}
-#------ GUI-bimagemgr
-%package	gui-bimagemgr
-Summary:	Bacula Image Manager
-Group:		Archiving/Backup
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	webserver
-Requires: 	perl-DBI
-Requires:	perl-DBD-mysql
-
-%description	gui-bimagemgr
-%{blurb}
-Bacula is a set of computer programs that permit you (or the system
-administrator) to manage backup, recovery, and verification of computer
-data across a network of computers of different kinds. In technical terms,
-it is a network client/server based backup program. Bacula is relatively
-easy to use and efficient, while offering many advanced storage management
-features that make it easy to find and recover lost or damaged files.
-
-Contains the bacula image manager cgi-bin
-
-#------ GUI-brestore
-%package	gui-brestore
-Summary:	Bacula Image Manager
-Group:		Archiving/Backup
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	usermode, usermode-consoleonly
-
-%description	gui-brestore
-%{blurb}
-Bacula is a set of computer programs that permit you (or the system
-administrator) to manage backup, recovery, and verification of computer
-data across a network of computers of different kinds. In technical terms,
-it is a network client/server based backup program. Bacula is relatively
-easy to use and efficient, while offering many advanced storage management
-features that make it easy to find and recover lost or damaged files.
-
-brestore is a file restore interface
-%endif
-
-#------ Tray monitor
-%if %{TRAY}
-%package	tray-monitor
-Summary:	Bacula Tray Monitor
-Group:		Archiving/Backup
-BuildRequires:	pkgconfig(gtk+-2.0)
-Requires:	bacula-common = %{epoch}:%{version}-%{release}
-Requires:	usermode, usermode-consoleonly
-
-%description	tray-monitor
-%{blurb}
-The tray monitor for bacula.
-%endif
-
-#%package -n	nagios-check_bacula
-#Summary:	The check_bacula plugin for nagios
-#Group:		Networking/Other
-#
-#%description -n	nagios-check_bacula
-#The check_bacula plugin for nagios.
-
-%prep
-
-%setup -q
-%setup -q -D -T -a 5
-mv bacula-gui-%{_guiver} gui
-%patch1 -p1 -b .mandriva
-%patch3 -p1 -b .updatedb
-%patch9 -p1 -b .listen
-%patch14 -p1 -b .config
-%patch15 -p1 -b .some_scripts_should_be_configuration_files
-%patch16 -p1 -b .sudo_sd
-%patch18 -p1 -b .backupdir
-%patch19 -p0 -b .openssl_linkage
-#patch20 -p1 -b .static
-%patch22 -p1 -b .gzip
-%patch23 -p1 -b .mysql
-%patch25 -p0 -b .link
-
-# fix conditional pam config file
-cp %{SOURCE7} bacula.pam
-
-%if %{TCPW}
-%define _configure_tcpw --with-tcp-wrappers
-%else
-%define _configure_tcpw %{nil}
-%endif
-%define _configure_common --enable-smartalloc --localstatedir=/var/lib --sysconfdir=%{sysconf_dir} --with-working-dir=%{working_dir} --with-scriptdir=%{script_dir} --with-plugindir=%{script_dir} --with-subsys-dir=%{subsysdir} --with-python --with-openssl --disable-conio --with-db-name=bacula --with-db-user=bacula %{_configure_tcpw} --with-archivedir=%{archivedir} --with-hostname=localhost --with-basename=localhost --with-smtp-host=localhost --with-dir-user=bacula --with-dir-group=bacula --with-sd-user=bacula --with-sd-group=tape --with-fd-user=bacula --with-fd-group=bacula --enable-batch-insert --with-systemd=%{_unitdir}
-
-#--disable-shared --enable-static 
-# workaround fix-libtool-ltmain-from-overlinking bug
-mv autoconf/ltmain.sh .
-ln -s ../ltmain.sh autoconf
-
-# workaround for --with-hostname not workibng
-find src -name \*.conf.in -exec sed -i -e 's/@hostname@/@basename@/' {} \;
-
-%build
-export QMAKE="%{qt4bin}/qmake"
-
-#serverbuild
-
-# disable FORTIFY_SOURCE http://www.mail-archive.com/bacula-devel@lists.sourceforge.net/msg01786.html
-export CFLAGS="$(echo $CFLAGS|sed s/-D_FORTIFY_SOURCE=.//)"
-for j in /sbin /bin /usr/sbin /usr/bin; do
-[ -x ${j}/mtx ] && export MTX=${j}/mtx
-done
-
-%if %{MYSQL}
-%configure2_5x --with-mysql \
-	%_configure_common \
-	--without-postgresql --without-sqlite3 \
-	--disable-bwx-console --disable-bat --disable-tray-monitor
-%make
-
-# we have to do this because of the shared libraries
-for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-	libtool --silent --mode=install install $z `pwd`/$z-mysql
-done
-
-for i in src/cats/*_mysql_*.in; do
-    mv ${i%.in} $i
-done
-%make clean
-%endif
-
-%if %{PGSQL}
-%configure2_5x --with-postgresql \
-	%_configure_common \
-	--without-mysql --without-sqlite3 \
-	--disable-bwx-console --disable-bat --disable-tray-monitor
-%make
-
-# we have to do this because of the shared libraries
-for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-	libtool --silent --mode=install install $z `pwd`/$z-postgresql
-done
-
-for i in src/cats/*_postgresql*.in; do
-    mv ${i%.in} $i
-done
-%make clean
-%endif
-
-# now build sqlite3 and the rest of GUI tools
-
-%configure2_5x --with-sqlite3 \
-	%_configure_common \
-	--without-mysql --without-postgresql \
-%if %{WXWINDOWS}
-	--enable-bwx-console \
-%endif
-%if %{TRAY}
-	--enable-tray-monitor \
-%endif
-%if %{BAT}
-	--enable-bat \
-	--with-qwt=%{_prefix} \
-%endif
-        --with-dir-password="XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX" \
-        --with-fd-password="XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX" \
-        --with-sd-password="XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX" \
-        --with-mon-dir-password="XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX" \
-        --with-mon-fd-password="XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX" \
-        --with-mon-sd-password="XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX" \
-
-%make
-
-# we have to do this because of the shared libraries
-for z in src/dird/bacula-dir src/stored/bscan src/tools/dbcheck; do
-	libtool --silent --mode=install install $z `pwd`/$z-sqlite3
-done
-
-%if %{GUI}
-# Now we build the gui
-(
-  cd gui
-  %configure2_5x --with-bacula="${PWD%/*}" \
-	%_configure_common
-  %make
-)
-%endif
-
-%install
-# do not use %%makeinstall here
-%makeinstall_std dir_user= dir_group=
-
-#lazy me
-mv %{buildroot}%{script_dir}/make_catalog_backup.pl %{buildroot}%{sysconf_dir}/scripts/make_catalog_backup.pl
-
-# install the catalog scripts and binaries
-for db_type in \
-%if %{MYSQL}
-	mysql \
-%endif
-%if %{PGSQL}
-	postgresql \
-%endif
-	sqlite3; do
-    install -m 755 updatedb/update_${db_type}_tables_*_to_? %{buildroot}%{script_dir}
-    install -m 755 updatedb/update_${db_type}_tables_*_to_?? %{buildroot}%{script_dir}
-    for f in create_${db_type}_database drop_${db_type}_database drop_${db_type}_tables \
-	grant_${db_type}_privileges make_${db_type}_tables update_${db_type}_tables ; do
-    	install -m 755 src/cats/$f %{buildroot}%{script_dir}
-	ln -snf $f %{buildroot}%{script_dir}/${f/${db_type}/bacula}
-    done
-    install -m 755 src/dird/bacula-dir-${db_type} %{buildroot}%{_sbindir}
-    install -m 755 src/stored/bscan-${db_type} %{buildroot}%{_sbindir}
-    install -m 755 src/tools/dbcheck-${db_type} %{buildroot}%{_sbindir}
-done
-
-# required to upgrade sqlite 2 database to sqlite 3
-install -m 755 updatedb/update_sqlite_tables_?_to_[4-8] %{buildroot}%{script_dir}
-
-# install the init scripts
-install -d %{buildroot}%{_initrddir} %{buildroot}%{_sysconfdir}/sysconfig
-install -m 755 platforms/mandriva/bacula-dir %{buildroot}%{_initrddir}/bacula-dir
-install -m 755 platforms/mandriva/bacula-fd %{buildroot}%{_initrddir}/bacula-fd
-install -m 755 platforms/mandriva/bacula-sd %{buildroot}%{_initrddir}/bacula-sd
-install -m 644 platforms/mandriva/sysconfig %{buildroot}%{_sysconfdir}/sysconfig/bacula
-
-# install the logrotate file
-install -d %{buildroot}%{_sysconfdir}/logrotate.d
-cp scripts/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/bacula-dir
-
-install -d %{buildroot}%{working_dir}
-install -D -d %{buildroot}%{archivedir}/bacula-restores
-
-install -d  %{buildroot}%{_sysconfdir}/sudoers.d
-install -m0440 %{SOURCE8} %{buildroot}%{_sysconfdir}/sudoers.d/bacula-sd
-
-install -d %{buildroot}%{_sysconfdir}/security/console.apps
-install -d %{buildroot}%{_sysconfdir}/pam.d
-install -d %{buildroot}%{_bindir}
-
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bconsole
-USER=root
-PROGRAM=%{_sbindir}/bconsole
-SESSION=true
-EOF
-
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bconsole
-ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bconsole
-
-# install the menu stuff
-%if %{WXWINDOWS} || %{BAT} || %{GUI}
-install -d %{buildroot}%{_iconsdir}
-install -d %{buildroot}%{_miconsdir}
-install -d %{buildroot}%{_liconsdir}
-%endif
-
-convert scripts/bacula.png -resize 16x16 %{buildroot}%{_miconsdir}/bacula.png
-convert scripts/bacula.png -resize 32x32 %{buildroot}%{_iconsdir}/bacula.png
-convert scripts/bacula.png -resize 48x48 %{buildroot}%{_liconsdir}/bacula.png
-
-%if %{WXWINDOWS}
-
-# XDG menu
-install -d %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mandriva-bacula-console-wx.desktop << EOF
-[Desktop Entry]
-Name=Bacula Console (wxWindows)
-Comment=Bacula Director Console
-Exec=%{_bindir}/bwx-console
-Icon=bacula
-Terminal=false
-Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
-EOF
-
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bwx-console
-USER=root
-PROGRAM=%{_sbindir}/bwx-console
-SESSION=true
-EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bwx-console
-ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bwx-console
-cp -p src/console/bconsole.conf %{buildroot}%{sysconf_dir}/bwx-console.conf
-%endif
-
-%if %{BAT}
-install -m0644 src/qt-console/bat.conf %{buildroot}%{sysconf_dir}/bat.conf
-
-# make some icons
-convert src/qt-console/images/bat_icon.png -resize 16x16 %{buildroot}%{_miconsdir}/bacula-bat.png
-convert src/qt-console/images/bat_icon.png -resize 32x32 %{buildroot}%{_iconsdir}/bacula-bat.png
-convert src/qt-console/images/bat_icon.png -resize 48x48 %{buildroot}%{_liconsdir}/bacula-bat.png
-
-# XDG menu
-install -d %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mandriva-bacula-bat.desktop << EOF
-[Desktop Entry]
-Name=Bacula Administration Tool (QT4)
-Comment=Bacula Administration Tool
-Exec=%{_bindir}/bat
-Icon=bacula-bat
-Terminal=false
-Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
-EOF
-
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bat
-USER=root
-PROGRAM=%{_sbindir}/bat
-SESSION=true
-EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bat
-ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bat
-%endif
-
-%if %{TRAY}
-
-# XDG menu
-install -d %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mandriva-bacula-tray-monitor.desktop << EOF
-[Desktop Entry]
-Name=Bacula Tray Monitor
-Comment=Bacula Tray Monitor
-Exec=%{_bindir}/bacula-tray-monitor
-Icon=bacula
-Terminal=false
-Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
-EOF
-
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/bacula-tray-monitor
-USER=root
-PROGRAM=%{_sbindir}/bacula-tray-monitor
-SESSION=true
-EOF
-install -m0644 bacula.pam %{buildroot}%{_sysconfdir}/pam.d/bacula-tray-monitor
-ln -s /usr/bin/consolehelper %{buildroot}%{_bindir}/bacula-tray-monitor
-%endif
-
-# Touch temporary password replacement file
-touch %{buildroot}%{sysconf_dir}/.pw.sed
-
-# Remove unneeded script
-%__rm -f %{buildroot}/%{script_dir}/{start,stop}mysql
-%__rm -f %{buildroot}/%{_sbindir}/bacula
-%__rm -f %{buildroot}/%{script_dir}/bacula
-%__rm -f %{buildroot}/%{script_dir}/bacula_config
-%__rm -f %{buildroot}/%{script_dir}/bacula-ctl-*
-%__rm -f %{buildroot}/%{script_dir}/bconsole
-
-# Remove development libraries
-%__rm -f %{buildroot}/%{_libdir}/*.a
-for i in %{buildroot}/%{_libdir}/*.la; do
-	%__rm -f $i ${i%.la}.so
-done
-
-%if %{GUI}
-# install of bimagemgr
-install -d -m 0755 %{buildroot}/var/www/html/bimagemgr
-install -d -m 0755 %{buildroot}/var/www/cgi-bin
-install -d -m 0755 %{buildroot}/%{_sysconfdir}
-cp gui/bimagemgr/bimagemgr.pl %{buildroot}/var/www/cgi-bin
-cp gui/bimagemgr/config.pm %{buildroot}/var/www/cgi-bin/config.pm
-cp gui/bimagemgr/create_cdimage_table.pl %{buildroot}/%{_sysconfdir}
-cp gui/bimagemgr/*.{html,gif} %{buildroot}/var/www/html/bimagemgr
-
-# install of brestore
-convert gui/brestore/brestore.png -resize 16x16 %{buildroot}%{_miconsdir}/brestore.png
-convert gui/brestore/brestore.png -resize 32x32 %{buildroot}%{_iconsdir}/brestore.png
-convert gui/brestore/brestore.png -resize 48x48 %{buildroot}%{_liconsdir}/brestore.png
-
-# XDG menu
-install -d %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mandriva-bacula-gui-brestore.desktop << EOF
-[Desktop Entry]
-Name=Bacula Restoration GUI
-Comment=Bacula Restoration GUI
-Exec=%{_bindir}/brestore
-Icon=brestore
-Terminal=false
-Type=Application
-Categories=X-MandrivaLinux-System-Archiving-Backup;Archiving;Utility;System;
-EOF
-
-cat << EOF > %{buildroot}%{_sysconfdir}/security/console.apps/brestore
-USER=root
-PROGRAM=%{_sbindir}/brestore.pl
-SESSION=true
-EOF
-
-install -m 0755 gui/brestore/brestore.pl %{buildroot}%{_sbindir}
-install -d -m 0755 %{buildroot}%{_datadir}/brestore
-cp gui/brestore/brestore.glade %{buildroot}%{_datadir}/brestore
-cp bacula.pam %{buildroot}/etc/pam.d/brestore
-ln -s /usr/bin/consolehelper %{buildroot}/usr/bin/brestore
-%endif
-
-# Nagios plugin does not works correctly with 3.0.0 yet :(
-## install the nagios plugin
-#install -d %{buildroot}%{_sysconfdir}/nagios/plugins.d
-#install -d %{buildroot}%{_libdir}/nagios/plugins
-#
-#install -m0755 src/check_bacula/check_bacula %{buildroot}%{_libdir}/nagios/plugins/
-#
-#cat > %{buildroot}%{_sysconfdir}/nagios/plugins.d/check_bacula.cfg << EOF
-## 'check_bacula' command definition
-#define command{
-#	command_name	check_bacula
-#	command_line	%{_libdir}/nagios/plugins/check_bacula -H \$HOSTADDRESS$ -D \$ARG1\$ -M \$ARG2\$ -K \$ARG3\$ -P \$ARG4\$
-#	}
-#EOF
-
-%pre common
-%_pre_useradd bacula %{working_dir} /bin/false
-
-%postun common
-%_postun_userdel bacula
-
-%pre dir-common
-# pre-2010.0 .pw.sed file used a different syntax which was changed with MES5-based .spec
-# this will ensure correct upgrade for old distro versions
-if [ -e %{sysconf_dir}/.pw.sed ]; then
-        sed -i -e "s/#YOU MUST SET THE DIR PASSWORD#/XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX/g" \
-            -e "s/#YOU MUST SET THE FD PASSWORD#/XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX/g" \
-            -e "s/#YOU MUST SET THE SD PASSWORD#/XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX/g" \
-            -e "s/#YOU MUST SET THE MONITOR DIR PASSWORD#/XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX/g" \
-            -e "s/#YOU MUST SET THE MONITOR FD PASSWORD#/XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX/g" \
-            -e "s/#YOU MUST SET THE MONITOR SD PASSWORD#/XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX/g" \
-            %{sysconf_dir}/.pw.sed
-fi
-# generating passwords, ensuring it is not visible in process list
-for string in XXX_REPLACE_WITH_DIRECTOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_PASSWORD_XXX XXX_REPLACE_WITH_DIRECTOR_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_CLIENT_MONITOR_PASSWORD_XXX XXX_REPLACE_WITH_STORAGE_MONITOR_PASSWORD_XXX; do
-    if ! grep -qs "$string" %{sysconf_dir}/.pw.sed; then
-	echo -n "s!$string!" >> %{sysconf_dir}/.pw.sed
-	openssl rand -base64 33 | sed -e 's/$/!g/'  >> %{sysconf_dir}/.pw.sed
-    fi
-done
-
-%post dir-common
-%post_fix_config *
-
-#we have to restart fd and sd if we changed their configuration file
-if [ -x %{_initrddir}/bacula-fd ]; then
-%{_initrddir}/bacula-fd condrestart
-fi
-if [ -x %{_initrddir}/bacula-sd ]; then
-%{_initrddir}/bacula-sd condrestart
-fi
-
-%preun dir-common
-%_preun_service bacula-dir
-
-%if %{MYSQL}
-%post dir-mysql
-umask 077
-for f in create_mysql_database drop_mysql_database drop_mysql_tables \
-    grant_mysql_privileges make_mysql_tables update_mysql_tables ; do
-    ln -snf $f %{script_dir}/${f/mysql/bacula}
-done
-ln -snf bacula-dir-mysql %{_sbindir}/bacula-dir
-ln -snf bscan-mysql %{_sbindir}/bscan
-ln -snf dbcheck-mysql %{_sbindir}/dbcheck
-# NOTE: IF THIS FAILS DUE TO MYSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
-# see /etc/bacula/scripts/make_catalog_backup.pl for an example of how it should be done
-DB_VER=`mysql bacula -e 'select * from Version;' 2>/dev/null | tail -n 1`
-if [ -z "$DB_VER" ]; then
-    echo "Hmm, doesn't look like you have an existing database."
-    if [ -e %{working_dir}/rpm_db.log ]; then
-	mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-    fi
-    echo "Creating MySQL bacula database..."
-    %{script_dir}/create_mysql_database >> %{working_dir}/rpm_db.log 2>&1
-    echo "Creating bacula tables..."
-    %{script_dir}/make_mysql_tables >> %{working_dir}/rpm_db.log 2>&1
-    echo "Granting privileges for MySQL user bacula..."
-    %{script_dir}/grant_mysql_privileges >> %{working_dir}/rpm_db.log 2>&1
-    mysql bacula -e 'select * from Version;' > /dev/null 2>&1
-    if [ $? != 0 ]; then
-	echo "automatic database creation failed!" 1>&2
-	echo "see log file %{working_dir}/rpm_db.log" 1>&2
-	echo "if this is the first bacula installation" 1>&2
-	echo "please check and run the following scripts:" 1>&2
-	echo "	%{script_dir}/create_bacula_database" 1>&2
-	echo "	%{script_dir}/make_bacula_tables" 1>&2
-	echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-	echo "else manually update the database to version %{_cur_db_ver} using the scripts:" 1>&2
-	echo "	%{script_dir}/update_mysql_tables_X_to_Y" 1>&2
-	echo "and:" 1>&2
-	echo "	%{script_dir}/update_bacula_tables" 1>&2
-    fi
-elif [ "$DB_VER" -lt "4" ]; then
-    echo "ERROR: your bacula database version is too old to be upgraded automatically" 1>&2
-    echo "save and drop any existing database" 1>&2
-    echo "and recreate it using the following scripts:" 1>&2
-    echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-    echo "	%{script_dir}/create_bacula_database" 1>&2
-    echo "	%{script_dir}/make_bacula_tables" 1>&2
-elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
-    echo "Backing up bacula tables"
-    mysqldump -f --opt bacula | bzip2 > %{working_dir}/bacula_backup.sql.bz2
-    if [ -e %{working_dir}/rpm_db.log ]; then
-	mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-    fi
-    echo "Upgrading bacula tables"
-    for v in `seq $DB_VER $(( %{_cur_db_ver} - 2 ))`; do
-	%{script_dir}/update_mysql_tables_${v}_to_$(($v + 1)) >> %{working_dir}/rpm_db.log 2>&1
-    done
-    %{script_dir}/update_bacula_tables >> %{working_dir}/rpm_db.log 2>&1
-    NDB_VER=`mysql bacula -e 'select * from Version;' 2>/dev/null | tail -n 1`
-    if [ "$NDB_VER" -lt "%{_cur_db_ver}" ]; then
-	echo "There was a problem updating Bacula MySQL database from version $DB_VER to %{_cur_db_ver}" 1>&2
-	echo "see log file %{working_dir}/rpm_db.log" 1>&2
-	echo "manually update the database to version %{_cur_db_ver} using the scripts:" 1>&2
-	echo "	%{script_dir}/update_mysql_tables_X_to_Y" 1>&2
-	echo "and:" 1>&2
-	echo "	%{script_dir}/update_bacula_tables" 1>&2
-    else
-	echo "Bacula MySQL database updated to version $NDB_VER"
-	echo "see log file %{working_dir}/rpm_db.log"
-	echo "If bacula works correctly you can remove the backup file %{working_dir}/bacula_backup.sql.bz2"
-    fi
-fi
-chown -R bacula:bacula %{working_dir}
-chmod -R u+rX,go-rwx %{working_dir}
-%_post_service bacula-dir
-%endif
-
-%if %{PGSQL}
-%post dir-pgsql
-umask 077
-for f in create_postgresql_database drop_postgresql_database drop_postgresql_tables \
-    grant_postgresql_privileges make_postgresql_tables update_postgresql_tables ; do
-    ln -snf $f %{script_dir}/${f/postgresql/bacula}
-done
-ln -snf bacula-dir-postgresql %{_sbindir}/bacula-dir
-ln -snf bscan-postgresql %{_sbindir}/bscan
-ln -snf dbcheck-postgresql %{_sbindir}/dbcheck
-# NOTE: IF THIS FAILS DUE TO PSQL NEEDING A PASSWORD YOU ARE ON YOUR OWN
-# see /etc/bacula/scripts/make_catalog_backup.pl for an example of how it should be done
-DB_VER=`su - postgres -c "psql bacula -A -t -c 'select * from Version;'" 2>/dev/null`
-if [ -z "$DB_VER" ]; then
-    echo "Hmm, doesn't look like you have an existing database."
-    if [ -e %{working_dir}/rpm_db.log ]; then
-	mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-    fi
-    echo "Creating PostgreSQL bacula database..."
-    su - postgres -c %{script_dir}/create_postgresql_database >> %{working_dir}/rpm_db.log 2>&1
-    echo "Creating bacula tables..."
-    su - postgres -c %{script_dir}/make_postgresql_tables >> %{working_dir}/rpm_db.log 2>&1
-    echo "Granting privileges for PostgreSQL user bacula..."
-    su - postgres -c %{script_dir}/grant_postgresql_privileges >> %{working_dir}/rpm_db.log 2>&1
-    su - postgres -c "psql bacula -A -t -c 'select * from Version;'" >/dev/null 2>&1
-    if [ $? != 0 ]; then
-	echo "automatic database creation failed!" 1>&2
-	echo "see log file %{working_dir}/rpm_db.log" 1>&2
-	echo "if this is the first bacula installation" 1>&2
-	echo "please check and run the following scripts:" 1>&2
-	echo "	%{script_dir}/create_bacula_database" 1>&2
-	echo "	%{script_dir}/make_bacula_tables" 1>&2
-	echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-	echo "else manually update the database to version %{_cur_db_ver} using the scripts:" 1>&2
-	echo "	%{script_dir}/update_mysql_tables_X_to_Y" 1>&2
-	echo "and:" 1>&2
-	echo "	%{script_dir}/update_bacula_tables" 1>&2
-    fi
-elif [ "$DB_VER" -lt "7" ]; then
-    echo "ERROR: your bacula database version is too old to be upgraded automatically" 1>&2
-    echo "save and drop any existing database" 1>&2
-    echo "and recreate it using the following scripts:" 1>&2
-    echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-    echo "	%{script_dir}/create_bacula_database" 1>&2
-    echo "	%{script_dir}/make_bacula_tables" 1>&2
-elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
-    echo "Backing up bacula tables"
-    su - postgres -c "pg_dump bacula" | bzip2 > %{working_dir}/bacula_backup.sql.bz2
-    if [ -e %{working_dir}/rpm_db.log ]; then
-	mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-    fi
-    echo "Upgrading bacula tables"
-    for v in `seq $DB_VER $(( %{_cur_db_ver} - 2 ))`; do
-	su - postgres -c "%{script_dir}/update_postgresql_tables_${v}_to_$(($v + 1))" >> %{working_dir}/rpm_db.log 2>&1
-    done
-    su - postgres -c "%{script_dir}/update_bacula_tables" >> %{working_dir}/rpm_db.log 2>&1
-    NDB_VER=`su - postgres -c "psql bacula -A -t -c 'select * from Version;'" 2>/dev/null`
-    if [ "$NDB_VER" -lt "%{_cur_db_ver}" ]; then
-	echo "There was a problem updating Bacula PostgreSQL database from version $DB_VER to %{_cur_db_ver}" 1>&2
-	echo "see log file %{working_dir}/rpm_db.log" 1>&2
-	echo "manually update the database to version %{_cur_db_ver} using the scripts:" 1>&2
-	echo "	%{script_dir}/update_postgresql_tables_X_to_Y" 1>&2
-	echo "and:" 1>&2
-	echo "	%{script_dir}/update_bacula_tables" 1>&2
-    else
-	echo "Bacula PostgreSQL database updated to version $NDB_VER"
-	echo "see log file %{working_dir}/rpm_db.log"
-	echo "If bacula works correctly you can remove the backup file %{working_dir}/bacula_backup.sql.bz2"
-    fi
-fi
-chown -R bacula:bacula %{working_dir}
-chmod -R u+rX,go-rwx %{working_dir}
-%_post_service bacula-dir
-%endif
-
-%post dir-sqlite3
-umask 077
-for f in create_sqlite3_database drop_sqlite3_database drop_sqlite3_tables \
-    grant_sqlite3_privileges make_sqlite3_tables update_sqlite3_tables ; do
-    ln -snf $f %{script_dir}/${f/sqlite3/bacula}
-done
-ln -snf bacula-dir-sqlite3 %{_sbindir}/bacula-dir
-ln -snf bscan-sqlite3 %{_sbindir}/bscan
-ln -snf dbcheck-sqlite3 %{_sbindir}/dbcheck
-if [ -s %{working_dir}/bacula.db -a -x /usr/bin/sqlite ]; then
-	DB2_VER=`echo "select * from Version;" | \
-	    sqlite %{working_dir}/bacula.db 2>/dev/null | tail -n 1`
-fi
-if [ -n "$DB2_VER" ]; then
-    # we have an sqlite2 db 
-    echo "SQLITE 2 database detected: will try to upgrade it."
-    echo "a backup of the untouched database will be found in %{working_dir}/bacula_backup.sql.bz2"
-    #TODO: check if bacula is running 
-    #service bacula-dir stop
-    echo ".dump" | sqlite %{working_dir}/bacula.db | \
-	bzip2 > %{working_dir}/bacula_backup.sql.bz2 
-    if [ -e %{working_dir}/rpm_db.log ]; then
-	mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-    fi
-    # try to upgrade it to minimum requirement for sqlite3
-    for v in `seq $DB2_VER 7`; do
-	%{script_dir}/update_sqlite_tables_${v}_to_$(($v + 1)) >> %{working_dir}/rpm_db.log 2>&1
-    done
-    touch %{working_dir}/bacula.db.new
-    echo .dump | sqlite %{working_dir}/bacula.db | \
-	sed 's/ INTEGER UNSIGNED AUTOINCREMENT,/ INTEGER,/' | \
-	sqlite3 %{working_dir}/bacula.db.new >> %{working_dir}/rpm_db.log 2>&1
-    mv %{working_dir}/bacula.db.new %{working_dir}/bacula.db
-fi
-DB_VER=`echo "select * from Version;" | \
-    sqlite3 %{working_dir}/bacula.db 2>/dev/null | tail -n 1`
-if [ -z "$DB_VER" -a -n "$DB2_VER" ]; then
-    echo "ERROR: conversion from Sqlite2 to Sqlite3 failed!" 1>&2
-    echo "see log file %{working_dir}/rpm_db.log" 1>&2
-    echo "save and drop any existing database" 1>&2
-    echo "and recreate it using the following scripts:" 1>&2
-    echo "	%{script_dir}/create_bacula_database" 1>&2
-    echo "	%{script_dir}/make_bacula_tables" 1>&2
-    echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-elif [ -z "$DB_VER" ]; then
-# grant privileges and create tables
-    if [ -e %{working_dir}/rpm_db.log ]; then
-	mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-    fi
-    if [ -s %{working_dir}/bacula.db ]; then
-	echo "found a possibly corrupt %{working_dir}/bacula.db" 1>&2
-	echo "renaming to: %{working_dir}/bacula.db.$$" 1>&2
-	mv %{working_dir}/bacula.db %{working_dir}/bacula.db.$$
-    fi
-    %{script_dir}/create_bacula_database >> %{working_dir}/rpm_db.log 2>&1
-    %{script_dir}/make_bacula_tables >> %{working_dir}/rpm_db.log 2>&1
-    %{script_dir}/grant_bacula_privileges >> %{working_dir}/rpm_db.log 2>&1
-    if [ $? != 0 ]; then
-	echo "automatic database creation failed!" 1>&2
-	echo "see log file %{working_dir}/rpm_db.log" 1>&2
-	echo "if this is the first bacula installation" 1>&2
-	echo "please check and run the following scripts:" 1>&2
-	echo "	%{script_dir}/create_bacula_database" 1>&2
-	echo "	%{script_dir}/make_bacula_tables" 1>&2
-	echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-	echo "else manually update the database to version %{_cur_db_ver} using the scripts:" 1>&2
-	echo "	%{script_dir}/update_sqlite3_tables_X_to_Y" 1>&2
-	echo "and:" 1>&2
-	echo "	%{script_dir}/update_bacula_tables" 1>&2
-    fi
-elif [ "$DB_VER" -lt "8" ]; then
-    echo "ERROR: your bacula database version is too old to be upgraded automatically" 1>&2
-    echo "save and drop any existing database" 1>&2
-    echo "and recreate it using the following scripts:" 1>&2
-    echo "	%{script_dir}/create_bacula_database" 1>&2
-    echo "	%{script_dir}/make_bacula_tables" 1>&2
-    echo "	%{script_dir}/grant_bacula_privileges" 1>&2
-elif [ "$DB_VER" -lt "%{_cur_db_ver}" ]; then
-    # in case we did a backup of an sqlite 2 database do not overwrite it
-    if [ -z "$DB2_VER" ]; then
-	echo "Backing up bacula tables"
-	echo ".dump" | sqlite3 %{working_dir}/bacula.db | bzip2 > %{working_dir}/bacula_backup.sql.bz2
-	if [ -e %{working_dir}/rpm_db.log ]; then
-	    mv %{working_dir}/rpm_db.log %{working_dir}/rpm_db.log.old
-	fi
-    fi
-    echo "Upgrading bacula tables"
-    for v in `seq $DB_VER $((%{_cur_db_ver} - 2))`; do
-	%{script_dir}/update_sqlite3_tables_${v}_to_$(($v + 1)) >> %{working_dir}/rpm_db.log 2>&1
-    done
-    %{script_dir}/update_bacula_tables >> %{working_dir}/rpm_db.log 2>&1
-
-    NDB_VER=`echo "select * from Version;" | \
-	sqlite3 %{working_dir}/bacula.db 2>/dev/null | tail -n 1`
-    if [ "$NDB_VER" -lt "%{_cur_db_ver}" ]; then
-	echo "There was a problem updating Bacula Sqlite3 database from version $DB_VER to %{_cur_db_ver}" 1>&2
-	echo "see log file %{working_dir}/rpm_db.log" 1>&2
-	echo "manually update the database to version %{_cur_db_ver} using the scripts:" 1>&2
-	echo "	%{script_dir}/update_sqlite3_tables_X_to_Y" 1>&2
-	echo "and:" 1>&2
-	echo "	%{script_dir}/update_bacula_tables" 1>&2
-    else
-	echo "Bacula Sqlite3 database updated to version $NDB_VER"
-	echo "see log file %{working_dir}/rpm_db.log"
-	echo "If bacula works correctly you can remove the backup file %{working_dir}/bacula_backup.sql.bz2"
-    fi
-fi
-chown -R bacula:bacula %{working_dir}
-chmod -R u+rX,go-rwx %{working_dir}
-%_post_service bacula-dir
-
-%post fd
-%post_fix_config bacula-fd
-%_post_service bacula-fd
-
-%preun fd
-%_preun_service bacula-fd
-
-%post sd
-%post_fix_config bacula-sd
-%_post_service bacula-sd
-
-%preun sd
-%_preun_service bacula-sd
-
-%pre console
-if [ -e %{sysconf_dir}/console.conf -a ! -e %{sysconf_dir}/bconsole.conf ]; then
-    mv %{sysconf_dir}/console.conf %{sysconf_dir}/bconsole.conf
-fi
-
-%post console
-%post_fix_config bconsole
-
-%if %{WXWINDOWS}
-%pre console-wx
-if [ -e %{sysconf_dir}/wx-console.conf -a ! -e %{sysconf_dir}/bwx-console.conf ]; then
-    mv %{sysconf_dir}/wx-console.conf %{sysconf_dir}/bwx-console.conf
-fi
-
-%post console-wx
-%post_fix_config bwx-console
-%endif
-
-%if %{BAT}
-%post bat
-%post_fix_config bat
-%endif
-
-%if %{TRAY}
-%post tray-monitor
-%post_fix_config tray-monitor
-%endif
-
-#%post -n nagios-check_bacula
-#%{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
-#
-#%postun -n nagios-check_bacula
-#if [ "$1" = "0" ]; then
-#    %{_initrddir}/nagios condrestart > /dev/null 2>&1 || :
-#fi
-
-%files -n %{baculalibname}
-%defattr(0755,root,root,0755)
-%{_libdir}/*.so
+Obsoletes:          bacula-dir-mysql <= 5.0.13
+Obsoletes:          bacula-dir-sqlite3 <= 5.0.13
+Obsoletes:          bacula-dir-pgsql <= 5.0.13
+
+Provides:           bacula-dir-mysql = %{EVRD}
+Provides:           bacula-dir-sqlite3 = %{EVRD}
+Provides:           bacula-dir-postgresql = %{EVRD}
+
+%description dir-sql
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains the SQL Bacula libraries, which are used by Director and
+Storage daemons. You have to select your preferred catalog library through the
+alternatives system.
+
+%files dir-sql
+%{_libdir}/libbaccats-mysql-%{version}.so
+%{_libdir}/libbaccats-mysql.so
+%{_libdir}/libbaccats-postgresql-%{version}.so
+%{_libdir}/libbaccats-postgresql.so
+%{_libdir}/libbaccats-sqlite3-%{version}.so
+%{_libdir}/libbaccats-sqlite3.so
+%{_libdir}/libbacsql-%{version}.so
+%{_libdir}/libbaccats-%{version}.so
+##############################################
+
+%package common
+Summary:            Common Bacula files
+Group:              %{group}
+Provides:           group(%username) = %uid
+Provides:           user(%username) = %uid
+Provides:           bacula-common = %{EVRD}
+
+Requires:           %{baculalibname} = %{EVRD}
+Requires(pre):      shadow-utils
+Requires(postun):   shadow-utils
+
+%description common
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains files common to all Bacula daemons.
 
 %files common
-%defattr(0644,root,root,0755)
-%{_docdir}/bacula
-%if %{BAT}
-%exclude %{_docdir}/bacula/*.html
-%endif
-%{_sysconfdir}/sysconfig/bacula
-%dir %{sysconf_dir}
-%dir %{script_dir}
-%attr(0755,root,root) %{_sbindir}/btraceback
-%attr(0755,root,root) %{_sbindir}/bsmtp
-%attr(0755,root,root) %{_sbindir}/bregex
-%attr(0755,root,root) %{_sbindir}/bwild
-%{_libdir}/bacula/btraceback.gdb
-%{_libdir}/bacula/btraceback.dbx
-%{_libdir}/bacula/btraceback.mdb
-%attr(770, bacula, bacula) %dir %{working_dir}
-%{_mandir}/man1/bsmtp.1*
-%{_mandir}/man8/bacula.8*
-%{_mandir}/man8/bregex.8*
+%doc README quickstart_*
+%config(noreplace) %{_sysconfdir}/logrotate.d/bacula
+%dir %{_localstatedir}/log/bacula %attr(750, bacula, bacula)
+%dir %{_localstatedir}/spool/bacula %attr(750, bacula, bacula)
+%dir %{_libexecdir}/%{name}
+%dir %{_sysconfdir}/%{name} %attr(755,root,root)
+%{_libexecdir}/%{name}/btraceback.dbx
+%{_libexecdir}/%{name}/btraceback.gdb
+%{_libexecdir}/%{name}/bacula_config
+%{_libexecdir}/%{name}/btraceback.mdb
 %{_mandir}/man8/btraceback.8*
-%{_mandir}/man8/bwild.8*
-%{_iconsdir}/bacula.png
-%{_miconsdir}/bacula.png
-%{_liconsdir}/bacula.png
-# exclude some manpage here if we are not building the related subpackage
-%if ! %{TRAY}
-%exclude %{_mandir}/man1/bacula-tray-monitor.1*
-%endif
-%if ! %{WXWINDOWS}
-%exclude %{_mandir}/man1/bacula-bwxconsole.1*
-%endif
-%if ! %{BAT}
-%exclude %{_mandir}/man1/bat.1*
-%endif
+%{_mandir}/man8/bpluginfo.8*
+%{_sbindir}/btraceback
+%{_sbindir}/bpluginfo
+#############################################
+
+%package client
+Summary:            Bacula backup client
+Group:              %{group}
+Requires:           bacula-common = %{EVRD}
+Requires(post):     systemd
+Requires(preun):    systemd
+Requires(postun):   systemd
+
+
+%description client
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains the bacula client, the daemon running on the system to be
+backed up.
+
+%files client
+%config(noreplace) %{_sysconfdir}/bacula/bacula-fd.conf %attr(640,root,root)
+%config(noreplace) %{_sysconfdir}/sysconfig/bacula-fd
+%{_mandir}/man8/bacula-fd.8*
+%{_libdir}/bacula/bpipe-fd.so
+%{_sbindir}/bacula-fd
+%{_unitdir}/bacula-fd.service
+
+###############################################
+%package dir-common
+Summary:            Bacula Director files
+Group:              %{group}
+Requires:           bacula-common = %{EVRD}
+Requires:           %{baculalibname} = %{EVRD}
+Requires:           bacula-dir-sql = %{EVRD}
+Requires:           logwatch
+# Director backends merged into core.
+Provides:           bacula-dir-common = %{EVRD}
+Obsoletes:          bacula-dir-common < 5.2.13
+Provides:           bacula-dir-mysql = %{EVRD}
+Obsoletes:          bacula-dir-mysql < 5.2.13
+Provides:           bacula-dir-sqlite3 = %{EVRD}
+Obsoletes:          bacula-dir-sqlite3 < 5.2.13
+Provides:           bacula-dir-pgsql = %{EVRD}
+Obsoletes:          bacula-dir-pgsql < 5.2.13
+
+Requires(post):     systemd
+Requires(preun):    systemd
+Requires(postun):   systemd
+
+
+%description dir-common
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains the director files.
 
 %files dir-common
-%defattr(0644,root,root,0755)
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bacula-dir.conf
-%config(noreplace) %{_sysconfdir}/logrotate.d/bacula-dir
+%doc updatedb examples/sample-query.sql
+%config(noreplace) %{_sysconfdir}/bacula/bacula-dir.conf %attr(640,root,bacula)
+%config(noreplace) %{_sysconfdir}/bacula/query.sql %attr(640,root,bacula)
+%config(noreplace) %{_sysconfdir}/logwatch/conf/logfiles/bacula.conf
+%config(noreplace) %{_sysconfdir}/logwatch/conf/services/bacula.conf
+%config(noreplace) %{_sysconfdir}/sysconfig/bacula-dir
+%{_libexecdir}/%{name}/create_bacula_database
+%{_libexecdir}/%{name}/delete_catalog_backup
+%{_libexecdir}/%{name}/drop_bacula_database
+%{_libexecdir}/%{name}/drop_bacula_tables
+%{_libexecdir}/%{name}/grant_bacula_privileges
+%{_libexecdir}/%{name}/make_bacula_tables
+%{_libexecdir}/%{name}/make_catalog_backup.pl
+%{_libexecdir}/%{name}/update_bacula_tables
+%{_libexecdir}/%{name}/create_mysql_database
+%{_libexecdir}/%{name}/drop_mysql_database
+%{_libexecdir}/%{name}/drop_mysql_tables
+%{_libexecdir}/%{name}/grant_mysql_privileges
+%{_libexecdir}/%{name}/make_mysql_tables
+%{_libexecdir}/%{name}/update_mysql_tables
+%{_libexecdir}/%{name}/create_sqlite3_database
+%{_libexecdir}/%{name}/drop_sqlite3_database
+%{_libexecdir}/%{name}/drop_sqlite3_tables
+%{_libexecdir}/%{name}/grant_sqlite3_privileges
+%{_libexecdir}/%{name}/make_sqlite3_tables
+%{_libexecdir}/%{name}/update_sqlite3_tables
+%{_libexecdir}/%{name}/create_postgresql_database
+%{_libexecdir}/%{name}/drop_postgresql_database
+%{_libexecdir}/%{name}/drop_postgresql_tables
+%{_libexecdir}/%{name}/grant_postgresql_privileges
+%{_libexecdir}/%{name}/make_postgresql_tables
+%{_libexecdir}/%{name}/update_postgresql_tables
+%{_mandir}/man1/bsmtp.1*
 %{_mandir}/man8/bacula-dir.8*
+%{_mandir}/man8/bregex.8*
+%{_mandir}/man8/bwild.8*
 %{_mandir}/man8/dbcheck.8*
-%{_mandir}/man8/bscan.8*
-%defattr (0755,root,root)
-%attr(0755,root,root) %{_initrddir}/bacula-dir
-%ghost %{_sbindir}/bacula-dir
-%ghost %{_sbindir}/dbcheck
-%ghost %{_sbindir}/bscan
-%ghost %{script_dir}/create_bacula_database
-%ghost %{script_dir}/drop_bacula_database
-%ghost %{script_dir}/drop_bacula_tables
-%ghost %{script_dir}/grant_bacula_privileges
-%ghost %{script_dir}/make_bacula_tables
-%ghost %{script_dir}/update_bacula_tables
-%attr(0600,root,root) %ghost %{sysconf_dir}/.pw.sed
-%dir %{sysconf_dir}/scripts
-%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/make_catalog_backup
-%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/make_catalog_backup.pl
-%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/delete_catalog_backup
-%attr(0644,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/query.sql
+%{_sbindir}/bacula-dir
+%{_sbindir}/bregex
+%{_sbindir}/bsmtp
+%{_sbindir}/bwild
+%{_sbindir}/dbcheck
+%{_sysconfdir}/logwatch/scripts/services/bacula
+%{_sysconfdir}/logwatch/scripts/shared/applybaculadate
+%{_unitdir}/bacula-dir.service
 
-%if %{MYSQL}
-%files dir-mysql
-%{_sbindir}/bacula-dir-mysql
-%{_sbindir}/dbcheck-mysql
-%{_sbindir}/bscan-mysql
-%{script_dir}/create_mysql_database
-%{script_dir}/drop_mysql_database
-%{script_dir}/drop_mysql_tables
-%{script_dir}/grant_mysql_privileges
-%{script_dir}/make_mysql_tables
-%{script_dir}/update_mysql_tables*
-%endif
+#############################################
+%package sd
+Summary:            Bacula storage daemon files
+Group:              %{group}
+Requires:           bacula-common = %{EVRD}
+Requires:           %{baculalibname} = %{EVRD}
+Requires:           bacula-dir-sql = %{EVRD}
+Requires:           mt-st
+Provides:           bacula-storage-common = %{EVRD}
+Provides:           bacula-storage-mysql = %{EVRD}
+Provides:           bacula-storage-sqlite3 = %{EVRD}
+Provides:           bacula-storage-pgsql = %{EVRD}
 
-%if %{PGSQL}
-%files dir-pgsql
-%{_sbindir}/bacula-dir-postgresql
-%{_sbindir}/dbcheck-postgresql
-%{_sbindir}/bscan-postgresql
-%{script_dir}/create_postgresql_database
-%{script_dir}/drop_postgresql_database
-%{script_dir}/drop_postgresql_tables
-%{script_dir}/grant_postgresql_privileges
-%{script_dir}/make_postgresql_tables
-%{script_dir}/update_postgresql_tables*
-%endif
+Requires(post):     systemd
+Requires(preun):    systemd
+Requires(postun):   systemd
 
-%files dir-sqlite3
-%{_sbindir}/bacula-dir-sqlite3
-%{_sbindir}/dbcheck-sqlite3
-%{_sbindir}/bscan-sqlite3
-%{script_dir}/create_sqlite3_database
-%{script_dir}/drop_sqlite3_database
-%{script_dir}/drop_sqlite3_tables
-%{script_dir}/grant_sqlite3_privileges
-%{script_dir}/make_sqlite3_tables
-%{script_dir}/update_sqlite*_tables*
 
-%files fd
-%defattr(0755,root,root)
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bacula-fd.conf
-%attr(0755,root,root) %{_initrddir}/bacula-fd
-%{_sbindir}/bacula-fd
-%{script_dir}/bpipe-fd.so
-%dir %attr(0770,bacula,bacula) %{archivedir}
-%dir %attr(0770,bacula,bacula) %{archivedir}/bacula-restores
+%description sd
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
 
-%attr(0644,root,root) %{_mandir}/man8/bacula-fd.8*
+This package contains the storage daemon, the daemon responsible for writing
+the data received from the clients onto tape drives or other mass storage
+devices.
 
 %files sd
-%defattr(0755,root,root)
-%attr(0755,root,root) %{_initrddir}/bacula-sd
-%dir %{sysconf_dir}
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bacula-sd.conf
-%{_sbindir}/bacula-sd
-%{_sbindir}/bcopy
-%{_sbindir}/bextract
-%{_sbindir}/bls
-%{_sbindir}/btape
-%dir %{sysconf_dir}/scripts
-%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/mtx-changer
-%attr(0644,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/mtx-changer.conf
-%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/disk-changer
-%attr(0755,root,bacula) %config(noreplace) %{sysconf_dir}/scripts/dvd-handler
-%defattr(0644,root,root,0755)
+%config(noreplace) %{_sysconfdir}/bacula/bacula-sd.conf %attr(640,root,root)
+%config(noreplace) %{_sysconfdir}/sysconfig/bacula-sd
+%{_libexecdir}/%{name}/disk-changer
+%{_libexecdir}/%{name}/dvd-handler
+%{_libexecdir}/%{name}/mtx-changer
+%{_libexecdir}/%{name}/mtx-changer.conf
 %{_mandir}/man8/bacula-sd.8*
 %{_mandir}/man8/bcopy.8*
 %{_mandir}/man8/bextract.8*
 %{_mandir}/man8/bls.8*
+%{_mandir}/man8/bscan.8*
 %{_mandir}/man8/btape.8*
-%dir %attr(0770,bacula,bacula) %{archivedir}
-%if %{mdkversion} >= 200910
-%attr(0440,root,root) %config(noreplace) %{_sysconfdir}/sudoers.d/bacula-sd
-%endif
+%{_sbindir}/bacula-sd
+%{_sbindir}/bcopy
+%{_sbindir}/bextract
+%{_sbindir}/bls
+%{_sbindir}/bscan
+%{_sbindir}/btape
+%{_unitdir}/bacula-sd.service
+
+##############################################
+
+
+%package console
+Summary:            Bacula management console
+Group:              %{group}
+Obsoletes:          bacula-console-wx <= 5.0.13
+Requires:           %{baculalibname} = %{EVRD}
+
+%description console
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains the command-line management console for the bacula backup
+system.
 
 %files console
-%defattr(0644,root,root,0755)
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bconsole.conf
-%config(noreplace) %{_sysconfdir}/security/console.apps/bconsole
-%config(noreplace) %{_sysconfdir}/pam.d/bconsole
-%attr(0755,root,root) %{_sbindir}/bconsole
-%verify(link) %{_bindir}/bconsole
+%config(noreplace) %{_sysconfdir}/bacula/bconsole.conf %attr(640,root,root)
 %{_mandir}/man8/bconsole.8*
+%{_sbindir}/bconsole
 
-%if %{WXWINDOWS}
-%files console-wx
-%defattr(0644,root,root,0755)
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bwx-console.conf
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bwx-console
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bwx-console
-#attr(0755,root,root) %{_sbindir}/bwx-console
-%verify(link) %{_bindir}/bwx-console
-%{_datadir}/applications/mandriva-bacula-console-wx.desktop
-%{_mandir}/man1/bacula-bwxconsole.1*
-%endif
+##################################################
 
-%if %{BAT}
+%package bat
+Summary:            Bacula bat console
+Group:              %{group}
+Requires:           %{baculalibname} = %{EVRD}
+
+%description bat
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains the bat version of the bacula management console.
+
 %files bat
-%defattr(0644,root,root,0755)
-%{_docdir}/bacula/*.html
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/bat.conf
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/security/console.apps/bat
-%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/bat
-%attr(0755,root,root) %{_sbindir}/bat
-%verify(link) %{_bindir}/bat
-%{_iconsdir}/bacula-bat.png
-%{_miconsdir}/bacula-bat.png
-%{_liconsdir}/bacula-bat.png
-%{_datadir}/applications/mandriva-bacula-bat.desktop
+%config(noreplace) %{_sysconfdir}/bacula/bat.conf %attr(640,root,root)
+%{_datadir}/applications/bacula-bat.desktop
+%{_datadir}/bacula/*.html
+%{_datadir}/bacula/*.png
+%{_datadir}/pixmaps/bat.png
 %{_mandir}/man1/bat.1*
-%endif
+%{_sbindir}/bat
 
-%if %{GUI}
-%files gui-bimagemgr
-/var/www/html/bimagemgr/*.gif
-/var/www/html/bimagemgr/*.html
-/var/www/cgi-bin/bimagemgr.pl
-/var/www/cgi-bin/config.pm
-%{_sysconfdir}/create_cdimage_table.pl
+############################################
 
-%files gui-brestore
-%defattr(0644,root,root,0755)
-%doc COPYING README INSTALL ReleaseNotes
-%attr(0644,root,root) %config(noreplace) /etc/security/console.apps/brestore
-%attr(0644,root,root) %config(noreplace) /etc/pam.d/brestore
-%attr(0755,root,root) %{_sbindir}/brestore.pl
-%verify(link) %{_bindir}/brestore
-%{_datadir}/brestore/brestore.glade
-%{_iconsdir}/brestore.png
-%{_miconsdir}/brestore.png
-%{_liconsdir}/brestore.png
-%{_datadir}/applications/mandriva-bacula-gui-brestore.desktop
-%endif
+%package tray-monitor
+Summary:            Bacula system tray monitor
+Group:              %{group}
+Requires:           %{baculalibname} = %{EVRD}
 
-%if %{TRAY}
+%description tray-monitor
+Bacula is a set of programs that allow you to manage the backup, recovery, and
+verification of computer data across a network of different computers. It is
+based on a client/server architecture.
+
+This package contains the Gnome and KDE compatible tray monitor to monitor your
+bacula server.
+
 %files tray-monitor
-%defattr(0644,root,root,0755)
-%attr(0640,root,bacula) %config(noreplace) %{sysconf_dir}/tray-monitor.conf
-%config(noreplace) %{_sysconfdir}/security/console.apps/bacula-tray-monitor
-%config(noreplace) %{_sysconfdir}/pam.d/bacula-tray-monitor
-%attr(0755,root,root) %{_sbindir}/bacula-tray-monitor
-%verify(link) %{_bindir}/bacula-tray-monitor
-%{_datadir}/applications/mandriva-bacula-tray-monitor.desktop
+%config(noreplace) %{_sysconfdir}/bacula/tray-monitor.conf %attr(640,root,root)
+%{_datadir}/applications/bacula-traymonitor.desktop
+%{_datadir}/pixmaps/bacula-tray-monitor.png
 %{_mandir}/man1/bacula-tray-monitor.1*
-%endif
+%{_sbindir}/bacula-tray-monitor
+
+#################################################
+# missing nagios in omv
+# enabled bacula plugin in nagios-check
+
+#%package -n nagios-check_bacula
+#Summary:            Nagios Plugin - check_bacula
+#Group:              %{group}
+#Requires:           %{baculalibname} = %{version}-%{release}
+#Requires:           nagios
+
+#%description -n nagios-check_bacula
+#Provides check_bacula support for Nagios.
+
+#%files -n nagios-check_bacula
+#%{_libdir}/nagios/plugins/check_bacula
+
+###################################################
+%prep
+%setup -q
+%patch1 -p2
+%patch2 -p1
+%patch3 -p0
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p2
+cp %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
+
+# Remove execution permissions from files we're packaging as docs later on
+find updatedb -type f | xargs chmod -x
+
+%build
+build() {
+export LDFLAGS="$LDFLAGS -lreadline -lncurses"
+export CFLAGS="%{optflags} -I%{_includedir}/ncurses"
+export CPPFLAGS="%{optflags} -I%{_includedir}/ncurses"
+%configure \
+        --disable-conio \
+        --disable-rpath \
+        --docdir=%{_datadir}/bacula \
+        --enable-batch-insert \
+        --enable-build-dird \
+        --enable-build-stored \
+        --enable-includes \
+        --enable-largefile \
+        --enable-readline \
+        --enable-smartalloc \
+        --sysconfdir=%{_sysconfdir}/bacula \
+        --with-basename=bacula \
+        --with-bsrdir=%{_localstatedir}/spool/bacula \
+        --with-dir-password=@@DIR_PASSWORD@@ \
+        --with-fd-password=@@FD_PASSWORD@@ \
+        --with-hostname=localhost \
+        --with-logdir=%{_localstatedir}/log/bacula \
+        --with-mon-dir-password=@@MON_DIR_PASSWORD@@ \
+        --with-mon-fd-password=@@MON_FD_PASSWORD@@ \
+        --with-mon-sd-password=@@MON_SD_PASSWORD@@ \
+        --with-mysql \
+        --with-openssl \
+        --with-pid-dir=%{_localstatedir}/run \
+        --with-plugindir=%{_libdir}/bacula \
+        --with-postgresql \
+        --with-scriptdir=%{_libexecdir}/bacula \
+        --with-sd-password=@@SD_PASSWORD@@ \
+        --with-smtp-host=localhost \
+        --with-sqlite3 \
+        --with-subsys-dir=%{_localstatedir}/lock/subsys \
+        --with-tcp-wrappers \
+        --with-working-dir=%{_localstatedir}/spool/bacula \
+        --with-x \
+        $*
+}
+
+
+export QMAKE=/usr/lib/qt4/bin/qmake
+build --enable-bat
+
+# Remove rpath
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+
+%{make} 
+make -C examples/nagios/check_bacula
+
+pushd src/qt-console/tray-monitor
+    $QMAKE tray-monitor.pro
+    %make
+popd
+
+
+%install
+%{makeinstall_std}
+
+# Nagios plugin
+#install -p -m 755 -D examples/nagios/check_bacula/.libs/check_bacula %{buildroot}%{_libdir}/nagios/plugins/check_bacula
+
+# Remove catalogue backend symlinks
+rm -f %{buildroot}%{_libdir}/libbaccats.so
+rm -f %{buildroot}%{_libdir}/libbaccats-%{version}.so
+
+# Bat
+install -p -m 644 -D src/qt-console/images/bat_icon.png %{buildroot}%{_datadir}/pixmaps/bat.png
+desktop-file-install --dir=%{buildroot}%{_datadir}/applications %{SOURCE13}
+
+# QT Tray monitor
+install -p -m 755 -D src/qt-console/tray-monitor/bacula-tray-monitor %{buildroot}%{_sbindir}/bacula-tray-monitor
+install -p -m 644 -D src/qt-console/tray-monitor/tray-monitor.conf %{buildroot}%{_sysconfdir}/bacula/tray-monitor.conf
+install -p -m 644 -D src/qt-console/images/bat_icon.png %{buildroot}%{_datadir}/pixmaps/bacula-tray-monitor.png
+install -p -m 644 -D manpages/bacula-tray-monitor.1 %{buildroot}%{_mandir}/man1/bacula-tray-monitor.1
+desktop-file-install --dir=%{buildroot}%{_datadir}/applications %{SOURCE14}
+
+# Logrotate
+mkdir -p %{buildroot}%{_localstatedir}/log/bacula
+install -p -m 644 -D %{SOURCE6} %{buildroot}%{_sysconfdir}/logrotate.d/bacula
+
+# Logwatch
+install -p -m 755 -D scripts/logwatch/bacula %{buildroot}%{_sysconfdir}/logwatch/scripts/services/bacula
+install -p -m 755 -D scripts/logwatch/applybaculadate %{buildroot}%{_sysconfdir}/logwatch/scripts/shared/applybaculadate
+install -p -m 644 -D scripts/logwatch/logfile.bacula.conf %{buildroot}%{_sysconfdir}/logwatch/conf/logfiles/bacula.conf
+install -p -m 644 -D scripts/logwatch/services.bacula.conf %{buildroot}%{_sysconfdir}/logwatch/conf/services/bacula.conf
+
+# Systemd unit files
+mkdir -p %{buildroot}%{_unitdir}
+install -p -m 644 -D %{SOURCE10} %{buildroot}%{_unitdir}/bacula-fd.service
+install -p -m 644 -D %{SOURCE11} %{buildroot}%{_unitdir}/bacula-dir.service
+install -p -m 644 -D %{SOURCE12} %{buildroot}%{_unitdir}/bacula-sd.service
+
+
+
+# Sysconfig
+install -p -m 644 -D %{SOURCE15} %{buildroot}%{_sysconfdir}/sysconfig/bacula-fd
+install -p -m 644 -D %{SOURCE16} %{buildroot}%{_sysconfdir}/sysconfig/bacula-dir
+install -p -m 644 -D %{SOURCE17} %{buildroot}%{_sysconfdir}/sysconfig/bacula-sd
+
+
+# bacula Spool dir
+mkdir -p %{buildroot}%{_localstatedir}/spool/bacula
+
+# Clean
+rm -f %{buildroot}%{_libexecdir}/bacula/{bacula,bacula-ctl-*,startmysql,stopmysql,bconsole,make_catalog_backup}
+rm -f %{buildroot}%{_sbindir}/bacula
+rm -f %{buildroot}%{_mandir}/man8/bacula.8.gz
+rm -f %{buildroot}%{_libdir}/*.la
+rm -f %{buildroot}%{_datadir}/bacula/{ChangeLog,INSTALL,LICENSE,README,ReleaseNotes,VERIFYING,technotes}
+
+# make rpmlint a happy 
+chmod 755 %{buildroot}%{_sbindir}/*
+chmod 755 %{buildroot}%{_libdir}/bacula/*
+chmod 755 %{buildroot}%{_libexecdir}/bacula/*
+chmod 644 %{buildroot}%{_libexecdir}/bacula/btraceback.*
+
+
+%post dir-sql
+/usr/sbin/alternatives --install %{_libdir}/libbaccats.so libbaccats.so %{_libdir}/libbaccats-mysql.so 50
+/usr/sbin/alternatives --install %{_libdir}/libbaccats.so libbaccats.so %{_libdir}/libbaccats-sqlite3.so 40
+/usr/sbin/alternatives --install %{_libdir}/libbaccats.so libbaccats.so %{_libdir}/libbaccats-postgresql.so 60
+# Fix for automatic selection of backends during upgrades
+if readlink /etc/alternatives/libbaccats.so | grep --silent mysql || \
+   readlink /etc/alternatives/bacula-dir | grep --silent mysql || \
+   readlink /etc/alternatives/bacula-sd | grep --silent mysql; then
+        /usr/sbin/alternatives --set libbaccats.so %{_libdir}/libbaccats-mysql.so
+elif readlink /etc/alternatives/libbaccats.so | grep --silent sqlite || \
+   readlink /etc/alternatives/bacula-dir | grep --silent sqlite || \
+   readlink /etc/alternatives/bacula-sd | grep --silent sqlite; then
+        /usr/sbin/alternatives --set libbaccats.so %{_libdir}/libbaccats-sqlite3.so
+else
+        /usr/sbin/alternatives --set libbaccats.so %{_libdir}/libbaccats-postgresql.so
+fi
+/sbin/ldconfig
+
+%preun dir-sql
+if [ "$1" = 0 ]; then
+        /usr/sbin/alternatives --remove libbaccats.so %{_libdir}/libbaccats-mysql.so
+        /usr/sbin/alternatives --remove libbaccats.so %{_libdir}/libbaccats-sqlite3.so
+        /usr/sbin/alternatives --remove libbaccats.so %{_libdir}/libbaccats-postgresql.so
+fi
+
+%postun dir-sql
+/sbin/ldconfig
+exit 0
+
+%pre common
+getent group %username >/dev/null || groupadd -g %uid -r %username &>/dev/null || :
+getent passwd %username >/dev/null || useradd -u %uid -r -s /sbin/nologin \
+    -d /var/spool/bacula -M -c 'Bacula Backup System' -g %username %username &>/dev/null || :
+exit 0
+
+
+%post client
+%systemd_post %{name}-fd.service
+
+%preun client
+%systemd_preun %{name}-fd.service
+
+%postun client
+%systemd_postun_with_restart %{name}-fd.service
+
+%post dir-common
+%systemd_post %{name}-dir.service
+
+%preun dir-common
+%systemd_preun %{name}-dir.service
+
+%postun dir-common
+%systemd_postun_with_restart %{name}-dir.service
+
+%post sd
+%systemd_post %{name}-sd.service
+
+%preun sd
+%systemd_preun %{name}-sd.service
+
+%postun sd
+%systemd_postun_with_restart %{name}-sd.service
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

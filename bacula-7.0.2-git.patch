@@ -1,0 +1,225 @@
+diff --git a/bacula/src/lib/lockmgr.h b/bacula/src/lib/lockmgr.h
+index d112ee8..6844eeb 100644
+--- a/bacula/src/lib/lockmgr.h
++++ b/bacula/src/lib/lockmgr.h
+@@ -230,6 +230,7 @@ int bthread_kill(pthread_t thread, int sig,
+ # define BTHREAD_MUTEX_NO_PRIORITY      PTHREAD_MUTEX_INITIALIZER
+ # define BTHREAD_MUTEX_INITIALIZER      PTHREAD_MUTEX_INITIALIZER
+ # define lmgr_mutex_is_locked(m)        (1)
++# define bthread_cond_wait_p(w, x, y, z) pthread_cond_wait(w,x)
+ 
+ #endif  /* _USE_LOCKMGR */
+ 
+diff --git a/bacula/src/lib/sellist.c b/bacula/src/lib/sellist.c
+index 3f58de0..003fec7 100644
+--- a/bacula/src/lib/sellist.c
++++ b/bacula/src/lib/sellist.c
+@@ -105,10 +105,6 @@ int64_t sellist::next()
+          errmsg = _("Selection items must be be greater than zero.\n");
+          goto bail_out;
+       }
+-      if (end > max) {
+-         errmsg = _("Selection item too large.\n");
+-         goto bail_out;
+-      }
+       if (beg <= end) {
+          return beg++;
+       }
+diff --git a/bacula/src/lib/sellist.h b/bacula/src/lib/sellist.h
+index e075191..c9716a0 100644
+--- a/bacula/src/lib/sellist.h
++++ b/bacula/src/lib/sellist.h
+@@ -37,7 +37,6 @@ class sellist : public SMARTALLOC {
+    char esave, hsave;
+    bool all;
+    int64_t beg, end;
+-   int64_t max;
+    int num_items;
+    char *str;
+    char *expanded;
+@@ -64,7 +63,6 @@ public:
+ inline sellist::sellist()
+ {
+    num_items = 0;
+-   max = 99999;
+    expanded = NULL;
+    str = NULL;
+    e = NULL;
+diff --git a/bacula/src/stored/bcopy.c b/bacula/src/stored/bcopy.c
+index 5fe76df..ce1144e 100644
+--- a/bacula/src/stored/bcopy.c
++++ b/bacula/src/stored/bcopy.c
+@@ -24,8 +24,6 @@
+ #include "bacula.h"
+ #include "stored.h"
+ 
+-/* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event) { return 1; }
+ extern bool parse_sd_config(CONFIG *config, const char *configfile, int exit_code);
+ 
+ /* Forward referenced functions */
+diff --git a/bacula/src/stored/bls.c b/bacula/src/stored/bls.c
+index c7d1957..ce8e53f 100644
+--- a/bacula/src/stored/bls.c
++++ b/bacula/src/stored/bls.c
+@@ -25,8 +25,6 @@
+ #include "stored.h"
+ #include "findlib/find.h"
+ 
+-/* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event) { return 1; }
+ extern bool parse_sd_config(CONFIG *config, const char *configfile, int exit_code);
+ 
+ static void do_blocks(char *infname);
+diff --git a/bacula/src/stored/bscan.c b/bacula/src/stored/bscan.c
+index fbfe75a..0a02971 100644
+--- a/bacula/src/stored/bscan.c
++++ b/bacula/src/stored/bscan.c
+@@ -29,8 +29,6 @@
+ #include "cats/cats.h"
+ #include "cats/sql_glue.h"
+ 
+-/* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event) { return 1; }
+ extern bool parse_sd_config(CONFIG *config, const char *configfile, int exit_code);
+ 
+ /* Forward referenced functions */
+diff --git a/bacula/src/stored/btape.c b/bacula/src/stored/btape.c
+index 4082de2..3ca97ff 100644
+--- a/bacula/src/stored/btape.c
++++ b/bacula/src/stored/btape.c
+@@ -34,8 +34,6 @@
+ #include "vtape_dev.h"
+ #endif
+ 
+-/* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event) { return 1; }
+ extern bool parse_sd_config(CONFIG *config, const char *configfile, int exit_code);
+ 
+ /* External subroutines */
+@@ -1117,8 +1115,9 @@ static bool write_two_files()
+    /*
+     * Set big max_file_size so that write_record_to_block
+     * doesn't insert any additional EOF marks
++    * Do calculation in 64 bits to avoid overflow.  
+     */
+-   dev->max_file_size = 2 * num_recs * dev->max_block_size;
++   dev->max_file_size = (uint64_t)2 * (uint64_t)num_recs * (uint64_t)dev->max_block_size;
+    Pmsg2(-1, _("\n=== Write, rewind, and re-read test ===\n\n"
+       "I'm going to write %d records and an EOF\n"
+       "then write %d records and an EOF, then rewind,\n"
+diff --git a/bacula/src/stored/reserve.c b/bacula/src/stored/reserve.c
+index 5f696a3..30719a7 100644
+--- a/bacula/src/stored/reserve.c
++++ b/bacula/src/stored/reserve.c
+@@ -445,7 +445,7 @@ bool find_suitable_device_for_job(JCR *jcr, RCTX &rctx)
+                }
+                if (vol->dev->is_autochanger()) {
+                   Dmsg1(dbglvl, "vol=%s is in changer\n", vol->vol_name);
+-                  if (!is_vol_in_autochanger(rctx, vol) || vol->dev->autoselect) {
++                  if (!is_vol_in_autochanger(rctx, vol) || !vol->dev->autoselect) {
+                      continue;
+                   }
+                } else if (strcmp(device_name, vol->dev->device->hdr.name) != 0) {
+diff --git a/bacula/src/tools/Makefile.in b/bacula/src/tools/Makefile.in
+index 22d9601..47a5128 100644
+--- a/bacula/src/tools/Makefile.in
++++ b/bacula/src/tools/Makefile.in
+@@ -141,7 +141,7 @@ bpluginfo.o: bpluginfo.c
+ 	$(CXX) $(DEFS) $(DEBUG) -c $(CPPFLAGS) -I$(srcdir) -I$(basedir) -I../filed -I../dird -I../stored $(DINCLUDE) $(CFLAGS) $<
+ 
+ bpluginfo: Makefile bpluginfo.o
+-	$(LIBTOOL_LINK) $(CXX) $(LDFLAGS) -L../lib -o $@ bpluginfo.o -lbac $(GETTEXT_LIBS)
++	$(LIBTOOL_LINK) $(CXX) $(LDFLAGS) -L../lib -o $@ bpluginfo.o -lbac $(DLIB) $(LIBS) $(GETTEXT_LIBS) $(OPENSSL_LIBS)
+ 
+ Makefile: $(srcdir)/Makefile.in $(topdir)/config.status
+ 	cd $(topdir) \
+diff --git a/bacula/src/tools/bsmtp.c b/bacula/src/tools/bsmtp.c
+index b227438..a3e5eef 100644
+--- a/bacula/src/tools/bsmtp.c
++++ b/bacula/src/tools/bsmtp.c
+@@ -60,13 +60,6 @@
+ #include <lmcons.h>
+ #endif
+ 
+-/*
+- * Dummy functions
+- */
+-int generate_daemon_event(JCR *jcr, const char *event)
+-{
+-   return 1;
+-}
+ 
+ #ifndef MAXSTRING
+ #define MAXSTRING 254
+diff --git a/bacula/src/tools/dbcheck.c b/bacula/src/tools/dbcheck.c
+index 069d07a..60f3301 100644
+--- a/bacula/src/tools/dbcheck.c
++++ b/bacula/src/tools/dbcheck.c
+@@ -30,12 +30,6 @@
+ 
+ extern bool parse_dir_config(CONFIG *config, const char *configfile, int exit_code);
+ 
+-/*
+- * Dummy functions
+- */
+-int generate_daemon_event(JCR *jcr, const char *event)
+-   { return 1; }
+-
+ typedef struct s_id_ctx {
+    int64_t *Id;                       /* ids to be modified */
+    int num_ids;                       /* ids stored */
+diff --git a/bacula/src/tools/drivetype.c b/bacula/src/tools/drivetype.c
+index 23cb42d..3112e37 100644
+--- a/bacula/src/tools/drivetype.c
++++ b/bacula/src/tools/drivetype.c
+@@ -25,10 +25,6 @@
+ #include "bacula.h"
+ #include "findlib/find.h"
+ 
+-/* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event)
+-   { return 1; }
+-
+ static void usage()
+ {
+    fprintf(stderr, _(
+diff --git a/bacula/src/tools/fstype.c b/bacula/src/tools/fstype.c
+index 2335a20..3e2e315 100644
+--- a/bacula/src/tools/fstype.c
++++ b/bacula/src/tools/fstype.c
+@@ -26,10 +26,6 @@
+ #include "findlib/find.h"
+ #include "lib/mntent_cache.h"
+ 
+-/* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event)
+-   { return 1; }
+-
+ static void usage()
+ {
+    fprintf(stderr, _(
+diff --git a/bacula/src/tools/testfind.c b/bacula/src/tools/testfind.c
+index 71bc7a7..d19a82a 100644
+--- a/bacula/src/tools/testfind.c
++++ b/bacula/src/tools/testfind.c
+@@ -31,7 +31,6 @@
+ #endif
+ 
+ /* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event) { return 1; }
+ int generate_job_event(JCR *jcr, const char *event) { return 1; }
+ void generate_plugin_event(JCR *jcr, bEventType eventType, void *value) { }
+ extern bool parse_dir_config(CONFIG *config, const char *configfile, int exit_code);
+diff --git a/bacula/src/tools/testls.c b/bacula/src/tools/testls.c
+index 6cedf40..ebf1bb3 100644
+--- a/bacula/src/tools/testls.c
++++ b/bacula/src/tools/testls.c
+@@ -26,7 +26,6 @@
+ #include "findlib/find.h"
+ 
+ /* Dummy functions */
+-int generate_daemon_event(JCR *jcr, const char *event) { return 1; }
+ int generate_job_event(JCR *jcr, const char *event) { return 1; }
+ void generate_plugin_event(JCR *jcr, bEventType eventType, void *value) { }
+ 

@@ -1,0 +1,3 @@
+# fill up if necessary
+# omv different linting policy this is 50...
+addFilter("E: incoherent-version-in-name")
