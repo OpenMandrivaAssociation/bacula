@@ -59,7 +59,7 @@ Release:	6
 Epoch:		1
 Group:		Archiving/Backup
 License:	GPL v2
-URL:		http://www.bacula.org/
+URL:		https://www.bacula.org/
 Source0:	http://prdownloads.sourceforge.net/bacula/bacula-%{version}.tar.gz
 Source5:	http://prdownloads.sourceforge.net/bacula/bacula-gui-%{_guiver}.tar.gz
 Source7:	bacula.pam
