@@ -76,6 +76,11 @@ Patch20:	bacula-5.2.12-static-sql.patch
 Patch22:	bacula-5.0.1-gzip.patch
 Patch23:	bacula-5.2.12-mysql-lib.patch
 Patch25:	bacula-5.0.3-link.patch
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires:	cdrecord
 BuildRequires:	dvd+rw-tools
 BuildRequires:	gettext
